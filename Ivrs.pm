@@ -2,6 +2,7 @@
 #System using standard voice modem. I have *taken* some codes from 
 #SerialPort.pm for serial port access, with due respect to Bill Birthisel.
 
+
 package SerialJunk;
 # this is the linux path. Need to determine location on other OSs
 use vars qw($ioctl_ok);
@@ -52,7 +53,7 @@ use Carp;
 use strict;
 
 use vars qw($VERSION @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS);
-$VERSION = '0.20';
+$VERSION = '0.24';
 
 require Exporter;
 

@@ -41,7 +41,7 @@ VOICE FILES - You will find lot of reading material for sound format on the
 net. I will restrict this discussion to IVRS only. The modem understands only 
 rmd (raw modem data) format. The pvftools (Portable Voice Format Tools) which 
 is included with Vgetty has excellent utilities to convert sound files from 
-one format to another format. From version 0.6, I have used raw modem data 
+one format to another format. From version 0.06, I have used raw modem data 
 type (or rmd ) format files only. The files in sfiles/ directory are in rmd 
 format  and converted from wav format using pvftools. The headers of these 
 files are removed so that these can be cut and pasted. In IVRS number of 
@@ -125,15 +125,17 @@ Modem on which it is tested so that I can include list of tested Modems in
 future release. I am planning to port this module to NT also provided I get 
 sufficient feed back to do so. 
 
-Copyright (C) 2001, Mukund Deshmukh. All rights reserved. This program is free software, you can redistribute it and/or modify it under the same terms as Perl itself. 
+Copyright (C) 2001, Mukund Deshmukh. All rights reserved. This program is free
+software, you can redistribute it and/or modify it under the same terms as 
+Perl itself.
 
 Author: 
 Mukund Deshmukh 
 M/s.Beta Computronics Pvt. Ltd. 
-45, Gopal Nagar, Opp. SBI Colony, 
+10/1, IT Park, Parsodi, 
 Nagpur - 440022, India. 
-Tel  91-712-227125, 240122 
-email betacomp@nagpur.dot.net.in 
+Tel  91-712-2227125, 2240122 
+email betacomp_ngp@sancharnet.in 
 web site www.betacomp.com 
  
  

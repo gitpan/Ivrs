@@ -32,5 +32,9 @@ Revision history for Perl extension Ivrs.pm
 	- Required perl header files included in perlheader/asm. Copy these
           files to top level directory of perl distribution /usr/lib/perl/<perl
 	  version>/asm/ ,if you get "disabling ioctl methods - ..." error.
+0.24  Mon Jan 05 2004
+        - Many people repored that they could not find asm/ directory, hence
+	- it is now included in current directory.
 
+   
  	      
