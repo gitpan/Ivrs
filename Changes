@@ -1,0 +1,8 @@
+Revision history for Perl extension Ivrs.
+0.01  Sat Jan 03 11:32:59 2001
+        - First release under GPL with SerialPort.pm 
+
+0.03  Sat Jan 27 11:32:59 2001
+	- part of SerialPort.pm merged with Ivrs.pm
+
+
