@@ -18,7 +18,7 @@ You can install the module by running these commands:
 
 There are some demo scripts included.
 
-For fax mode install efax or copy efix and efax from bin/ to your /usr/bin.
+For fax install efax or copy efix and efax from bin/ to your /usr/bin.
 
 For converting your recorded wav files, install mgetty-voice for pvftools
 support.

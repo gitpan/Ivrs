@@ -1,13 +1,11 @@
-               INTERACIVE VOICE RESPONSE SYSTEM
+                 INTERACIVE VOICE RESPONSE SYSTEM
 
 INTRODUCTION- IVRS (Interactive Voice Response System) is relatively new 
 technology aimed to integrate computer and telephony. We find number of 
-IVRS in daily walk of life giving various types of information to caller 
+IVRS applications in daily walk of life giving information to caller 
 through Tele banking, Product Information, Fax Servers, Call Centers, Voice 
 Mail Systems, and many more. All these can be implemented using this module 
-under linux. Newer linux kernel has computer telephony support but it is 
-restricted to specific hardware and does not support Voice modem. Vgetty, 
-which is a voice version of getty, is around for many years, but I found 
+under linux. Vgetty, which is a voice version of getty, is around for many years, but I found 
 Vgetty not suitable for IVRS due to it's slow responses, and lack of proper 
 documentation. This modules is written in perl, uses voice modem and does 
 not require any other special cards, not even the sound card. I have tested 
@@ -16,9 +14,8 @@ work on other Linux distribution. As regard capability of this module, it
 can play message (sampling rate 11025 bytes/sec), get Caller ID, send /receive 
 fax, Record message, dial out side number, generate fast response (no need 
 to wait for message to complete), interface with data base, and in short 
-almost every thing that a commercial IVRS can do. The only limitation which 
-I fore see compared to other IVRS using Dialogic card is the number of 
-telephone line that can be supported on one machine.  I have tested this 
+almost every thing that a commercial IVRS can do. The only limitation number 
+of telephone line that can be supported on one machine.  I have tested this 
 IVRS on two modems and it rocks, which hopefully should hold good for 4 
 modems (with extra serial port card) as well. 
 
@@ -35,15 +32,10 @@ on net. This module mostly uses the AT# commands. The new voice modem has
 ability to read the CallerID information, receive/send fax, dial another 
 number, line quality diagnosis etc.  Due to use of modem, this IVRS is 
 limited to two channel (or Telephone lines), because PC has only two serial 
-ports. Multi port serial card can be installed but I have not tested it. In 
-my opinion this not a limitations as single modem based IVRS can cater to 
-almost 3000 callers. I have tested Dlink, GVC, LanBit, US Robotics modems with this 
+ports. Multi port serial card can be installed but I have not tested it.
+I have tested Dlink, GVC, LanBit, US Robotics modems with this 
 module. The modem speed does not matter because voice modem with 33.6 KBPS 
-and above will work fine. I have seen other IVRS, which uses Dialogic Cards,
-these cards are nothing but the multiple modems (2, 4, 8, 16) on ISA or PCI 
-card. As these cards communicates with PC via ISA or PCI slot, the data 
-transfer rate is very high and hence PC can cater to multiple modem at one 
-time. However these card are expensive compared to modem. 
+and above will work fine.
 
 VOICE FILES - You will find lot of reading material for sound format on the 
 net. I will restrict this discussion to IVRS only. The modem understands only 
@@ -51,16 +43,15 @@ rmd (raw modem data) format. The pvftools (Portable Voice Format Tools) which
 is included with Vgetty has excellent utilities to convert sound files from 
 one format to another format. From version 0.6, I have used raw modem data 
 type (or rmd ) format files only. The files in sfiles/ directory are in rmd 
-format  and converted from wave format using pvftools. The headers of these 
+format  and converted from wav format using pvftools. The headers of these 
 files are removed so that these can be cut and pasted. In IVRS number of 
 messages are generated on the fly, depending on user input. The rmd files 
 in sfiles/ directory can be cut or joined to create a new message. For 
 example to announce a number 123 to caller, files (from sfiles/ ) "1", 
 "hundred", "20", "3" will be added and then played to caller. 
-The voice files in this distribution are customized for Rockwell chip 
-set modem, which is most popular. The pvftools supports other modem type also 
-and files for the other modem can be created using wavtorock script included 
-with this distribution.
+The voice files in this distribution are customized for Rockwell chip set
+modem and US Robotics modem, which is most popular. The pvftools supports other modem type also 
+and files for the other modem can be created using pvftools.
 
 
 SUPPORTED MODEMS - The following modem uses Rockwell Chip set and may work 

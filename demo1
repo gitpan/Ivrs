@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-#This is simple demo script showing some basic operations. 
+#This is a simple demo script showing some basic operations. 
 #It initializes the serial port,
 #Waits for ring on the modem, when a call comes, plays the file bgreet,
 #takes the dtmf code from the caller and finally says sorry and plays , 
@@ -36,12 +36,13 @@ $iv->initmodem||die"Modem failed\n";
 #But then you will have enter dtmf code from the telephone connected to modem.
 
 print "Waiting for the ring.....\n";
-$cid=$iv->waitring; #choose this one 
-#$iv->atcomm("AT#VTX","CONNECT"); #OR this one AND Not the both.
+$cid=$iv->waitring; 
 print "Call received from $cid \n";
 
 #pick up the receiver when a call come and play the greeting message.
-#and collect 4 digits of dtmf code, returned in $accno
+#and collect 4 digits of dtmf code, returned in $accno. The caller can enter
+fewer than 4 DTMF code by terminating with * or #,
+
 $accno=$iv->playfile("bgreet","4")||&closeall;
 
 print "The caller has punched $accno dtmf codes \n";
@@ -57,7 +58,7 @@ $iv->addtxt("ABCEFGH");
 
 #play the final file and accept one DTMF just to stop the playing of message. 
 $iv->playfile("","1")||&closeall;
-
+sleep 1;
 #close the port 
 $iv->addmsg("thank");
 $iv->playfile||&closeall;

@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-#This is simple demo script showing some basic operations. 
+#This is a simple demo script showing some basic operations. 
 #It initializes the serial port,
 #Waits for ring on the modem, when a call comes, sends a text file
 #faxmsg.txt over fax,
@@ -49,8 +49,8 @@ sleep 1;
 #open (STDOUT,">>/dev/null");
 #open (STDERR,">>/dev/null");
 
-system "efix -p8x3 -n /tmp/faxmsg faxmsg.txt";
-system "efax -d /dev/$portname -o1 -jX3 -tT /tmp/faxmsg";
+system "bin/efix -p8x3 -n /tmp/faxmsg faxmsg.txt";
+system "bin/efax -d /dev/$portname -o1 -jX3 -tT /tmp/faxmsg";
 unlink ("/tmp/faxmsg");
 
 

@@ -52,7 +52,7 @@ use Carp;
 use strict;
 
 use vars qw($VERSION @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS);
-$VERSION = '0.10';
+$VERSION = '0.20';
 
 require Exporter;
 
@@ -111,10 +111,11 @@ my $vdir="sfiles";
 my $logfile="/var/log/Ivrs_Log";
 my $tmpmsg="/tmp/tmpmsg";
 
+
 #These headers are required for recorded files only.
-#my $rmdhdr="";
+my $rmdhdr="";
 # For Rockwell chip set modem
-#my $rmdhdr="RMD1Rockwell".pack("C20",0,0,0,0,0,0,0,0,0,4,28,32,4,0,0,0,0,0,0,0);
+my $rmdhdr="RMD1Rockwell".pack("C20",0,0,0,0,0,0,0,0,0,4,28,32,4,0,0,0,0,0,0,0);
 # For US Robotics modem
 #my $rmdhdr="RMD1US Robotics".pack("C17",0,0,0,0,0,0,8,31,64,1,0,0,0,0,0,0,0);
 
@@ -789,11 +790,17 @@ sub dialout
 #and pick up, even before the receiver is lifted by called number.
     my $self=shift;
     my $telno = shift;
+    my $ddelay=shift;
     my $cstring ="ATX1DT".$telno;
+    $self->atcomm("ATZ","OK");
+ #   $self->atcomm("AT#VRA=45","OK");
+ #   $self->atcomm("AT#VRN=250","OK");
     $self->atcomm("AT#VLS=0","OK");
-    $self->atcomm("AT#CLS=8","OK");
-    $self->atcomm($cstring,"VCON");
-    $self->atcomm("AT#VLS=2","VCON")||return undef;
+    $self->atcomm("AT#CLS=8","OK");    
+    $self->atcomm("AT","OK");
+    $self->atcomm($cstring,"VCON",$ddelay);
+    sleep 5;
+#    $self->atcomm("AT#VLS=2","OK")||return undef;
     $self->atcomm("AT#VTX","CONNECT")||return undef;
     print LOG "Dialing  $telno \n" if $Babble;
 
@@ -812,8 +819,7 @@ my $self=shift;
     $self->atcomm("AT#VLS=0","OK");
     $self->atcomm("AT#CLS=8","OK");
     $self->atcomm("ATDP1","");
-    sleep 2;
-    $self->atcomm($cstring,"OK");
+    $self->atcomm($cstring,"OK","20");
     $self->atcomm("ATH","OK")||return undef;
     print LOG "Transfered to $telno \n" if $Babble;
 }
@@ -822,13 +828,16 @@ sub atcomm {
     my $self=shift;
     my $atstr=shift;
     my $waitfor=shift;
+    my $dialdelay=shift;
     my $oltime=time;
+    my $mdtime=5;
+    $mdtime=$dialdelay if ($dialdelay);  
     my $getstr="";
     #$atstr=$atstr."AT\r";
     $self->write("$atstr\r");
     while (!($getstr=~/$waitfor/)) {
         $getstr=$getstr.$self->input;
-        if (((time - $oltime)>5)||($getstr=~/[b]/)) {
+        if (((time - $oltime)>$mdtime)||($getstr=~/[b]/)) {
             print LOG "Modem failed to reply <$atstr> \n";
             #$self->pclose ;
             return undef;
@@ -904,7 +913,7 @@ sub playfile {
             print LOG "Call->User hanged up before call was finished\n";
             return undef;
         }
-        last if (length($rdtmf)==$ndtmf*2);
+        last if (length($rdtmf)==$ndtmf*2) or ($dtmf=~/[#\*]/);
     }
     $self->atcomm("\020\030\020\003","VCON") ||return undef;
     $self->atcomm("AT#VTX","CONNECT")||return undef;
@@ -919,7 +928,7 @@ sub recfile {
     $self->atcomm("\020\003\020\003","VCON");
     $self->atcomm("AT#VRX","CONNECT")||return undef;
     open (FH1,">$recfile");
-#    print FH1 $rmdhdr;
+    print FH1 $rmdhdr;
     my $otimer=time;
     while ((time-$otimer)<$ttime) {
         print FH1 $self->input;
@@ -1088,6 +1097,7 @@ product inforamtion, tele marketing, voice mail, fax servers, and many more.
 All these can be implemented using this module and with very few lines of
 Perl code. This module takes care of all low level functions of serial port 
 and modem. 
+
 A log file defined by the $logfile="/var/log/Ivrs_Log.ttyS*" will be opened for
 logging IVRS activity. Set $Babble =0 if you do not want to log all the
 messages (default is 1).
@@ -1102,23 +1112,27 @@ demo2 - Message recording and playback.
 
 demo3 - Fax server.
 
+demo4 - Dial a telephone number.
+
+demo5 - Transfer  caller line to another phone 
+
 =head1 METHODS
 
 $iv = new Ivrs('ttyS1',$vdir);
 
-The first variable is the port name for modem and serial port (ttyS0 or ttyS1)
+The first variable is the port name for modem / serial port (ttyS0 or ttyS1)
   
 The second variable $vdir is voice file directory.
 You must specify $vdir if you want to use other than  default directory 
 ( sfiles/ ). If you are running IVRS from /etc/inittab (YES!! you can do) 
-then absolute path for voice files will be rquired.
+then absolute path for voice files is must.
 
 =head2 Initilization.
 
 $iv->setport('38400','none','8','1','rts','8096');
 
 The serial port parameters are set here. These parameters are carefully
-worked out after extensive trials. Change these only if you know what are you
+worked out after extensive trials. Change only if you know what are you
 doing or if these settings do not work on your modem.
 
 $iv->initmodem;
@@ -1152,7 +1166,7 @@ The $msgfile contains the message file to be played.
 You can specify the full path of the file like,
 /home/Ivrs-0.07/sfiles/greet  
 or only file name (like greet) from voice file directory. If no file name 
-is specified, it will play special file contained in $tmpmsg. I will discuss 
+is specified, it will play special file indicated by $tmpmsg. I will discuss 
 this file in next section.
 
 Another variable required is $dtmf, which is number of dtmf codes to be 
@@ -1170,6 +1184,9 @@ caller to enter remaining digits. When caller has pressed required number of
 digits ($dtmf) then playing will be stopped and $iv->playfile will return with
 complete dtmf digits.
 
+if $dtmf = * OR # then playing will stop and DTMF code punched by caller
+prior to * OR # will be returned.
+
 $iv->addmsg($msg)
 
 $iv->addval($val)
@@ -1180,13 +1197,12 @@ $iv->addtxt("ABCDEF")
 
 $iv->addate("20001212")
 
-IVRS requires many messages to generated on the fly and then played to
+IVRS requires many messages to be generated on the fly and then played to
 caller, like numbers in numerical format, date etc. The default voice 
-directory sfiles/ has number of rmd files with 32 bytes of header striped.
-These header less files can be cut and pasted as required. The rmd file 
-header ( $rmdhdr ) is added to it before playing these file in $iv-playfile.
+directory sfiles/ has number of rmd files. These files can be cut and pasted 
+as required.
 The above mentioned routines adds up various rmd files to a file specified 
-by $tmpmsg, and finally this file along with header is played to caller. 
+by $tmpmsg, and finally this file is played to caller. 
 For example to play number 123 to caller, files (from sfiles/) '1','hundred',
 '20' and '3' will be added to $tmpmsg, and then played. 
 
@@ -1217,7 +1233,7 @@ $iv->recfile($filename,$duration)
 
 This will record the file $filename in rmd format with proper header
 for a period of $duration seconds. This rmd file can be converted to any
-format using pvftools.
+format using pvftools like rmdtopvf and pvftowav.
 
 =head2 Other Functions.
 
@@ -1230,8 +1246,6 @@ $iv->callxfer($telno)
 
 You can transfer a call,  however code is experimental, it worked
 with US Robotics modem only.
-
-
 
 $iv->faxmode
 

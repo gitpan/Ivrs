@@ -48,17 +48,6 @@ print "Call received from $cid \n";
 $accno=$iv->playfile("bgreet","4")||&closeall;
 
 print "The caller has punched $accno dtmf codes \n";
-
-#add file sory and waccno to say "Sorry" and "Wrong account Number"
-#along with received number to a file (set in Ivrs.pm as $tmpmsg) 
-$iv->addval($accno);
-$iv->addmsg("sory");
-$iv->addmsg("waccno");
-
-#play the final file and accept one DTMF just to stop the playing of message. 
-$iv->playfile("","1")||&closeall;
-
-#close the port 
 $iv->callxfer("21");
 &closeall;
 exit 1;

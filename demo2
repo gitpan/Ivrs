@@ -51,6 +51,9 @@ $iv->playfile("/tmp/inmsg")||&closeall;
 sleep 2;
 $iv->addmsg("thank");
 $iv->playfile||&closeall;
+`bin/rmdtopvf /tmp/inmsg /tmp/inmsg.pvf`;
+`bin/pvftowav /tmp/inmsg.pvf /tmp/inmsg.wav`;
+print "--->/tmp/inmsg.wav is a wave file of recorded message\n";
 &closeall;
 exit;
 

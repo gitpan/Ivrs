@@ -25,4 +25,9 @@ Revision history for Perl extension Ivrs.pm
 	- CPU usage is reduced.
 	- Response time to DTMF is improved.
 	- Dial out and Call Transfer added on experimental basis.
-	      
+0.20  Fri Jul 25 2003
+	- Dial out code is improved.
+	- Additional DTMF like * and # are used get the variable length DTMF
+        - codes.
+
+ 	      
