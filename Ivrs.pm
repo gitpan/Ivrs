@@ -817,7 +817,7 @@ sub atcomm {
         }
     }
     #return $getstr;
-    print "$atstr -> $getstr\n";
+#    print "$atstr -> $getstr\n";
     return 1;
 }
 
