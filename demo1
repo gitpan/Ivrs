@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 #This is simple demo script showing some basic operations. 
 #It initializes the serial port,
-#Waits for ring on the modem, when a call comes, play the file greet,
+#Waits for ring on the modem, when a call comes, plays the file bgreet,
 #takes the dtmf code from the caller and finally says sorry and plays , 
 #the dtmf code received in numeriacal format, date, and some text.
 
@@ -10,24 +10,28 @@ use Ivrs;
 
 #you must specify your serial port where voice modem is connected
 $portname=$ARGV[0];
-die "\n usage: demo1.pl ttyS0 or ttyS1\n\n" if ($portname eq "");
+die "\n usage: $0 ttyS0 or ttyS1\n\n" if ($portname eq "");
 
 #Set the voice file directory. The absolute path is required if you want to
-#run the IVRS from the inittab.
+#run the IVRS from the inittab or any other directory. The defaults are 
+#'sfile' and 'bin' in the current directory.
+$vdir="sfiles";
+$bindir="bin";
 
 #initialize the serial port
-$iv = new Ivrs($portname);
+$iv = new Ivrs($portname,$vdir,$bindir);
 print "Serial port and Modem initialized\n";
 
-#set the serial port parameters if you are sure.
+#set the serial port parameters only if you are sure.
 $iv->setport("38400","none","8","1","rts","8096")||die"Setting Failed\n";
 
 #initialize the modem and put it in voice mode.
 $iv->initmodem||die"Modem failed\n";
 
-#put the modem in answer mode $cid will have the caller ID
+#put the modem in answer mode, $cid will have the caller ID
 $cid=$iv->waitring;
 print "Call received from $cid \n";
+
 
 #pick up the receiver when a call come and play the greeting message.
 #and collect 4 digits of dtmf code, returned in $accno
@@ -38,8 +42,9 @@ print "The caller has punched $accno dtmf codes \n";
 
 #add file sory and waccno to say "Sorry" and "Wrong account Number"
 #along with received number to a file (set in Ivrs.pm as $tmpmsg) 
-$iv->addval($accno);
+$iv->addval($accno."1234");
 $iv->addmsg("sory");
+$iv->addmil("9123456");
 $iv->addmsg("waccno");
 $iv->addate("12122000");
 $iv->addtxt("ABCDE");
@@ -53,6 +58,8 @@ $iv->playfile||&closeall;
 &closeall;
 exit 1;
 
+#This routine is excecuted if there is any error in handling the modem
+#command.
 sub closeall
 {
 $iv->closep;

@@ -1,5 +1,5 @@
 #Perl module to implement a full functional Inter Active Voice Response
-#System using standard voice modem. I have *stolen* some codes from 
+#System using standard voice modem. I have *taken* some codes from 
 #SerialPort.pm for serial port
 #access, with due respect to Bill Birthisel.
 
@@ -151,6 +151,10 @@ sub new {
     print LOG "\n-----------Access Log file for IVRS-----------\n";
     print LOG `date`;
     $self->{NAME}="/dev/".$self->{NAME} ;
+    my $tmpdir=shift;
+    $vdir=$tmpdir if $tmpdir ne "";
+    $tmpdir=shift;
+    $bindir=$tmpdir if $tmpdir ne "";
     my $quiet = shift;
     unless ($quiet or ($bitset && $bitclear && $rtsout && $dtrout) ) {
        nocarp or warn "disabling ioctl methods - constants not found\n";
@@ -742,342 +746,307 @@ sub pclose {
 ##My routines starts from here
 #---------------------------------------------------------------------#
 sub initmodem {
-my $self=shift;
-$self->pulse_dtr_on(500)||return undef;
-$self->pulse_dtr_off(500)||return undef;
-$self->atcomm("ATZ","OK") ||return undef; 
-$self->atcomm("AT&F1","OK") ||return undef;
-$self->atcomm("AT&C1&D2&K3M2L3","OK")||return undef; 
-$self->atcomm("AT#CLS=8","OK")||return undef;
-$self->atcomm("AT","OK")||return undef; 
-$self->atcomm("ATS91=50","OK")||return undef;
-$self->atcomm("AT#VBS=4","OK")||return undef;
-$self->atcomm("AT#VSP=2","OK")||return undef;
-$self->atcomm("AT#VTD=3F,3F,3F","OK")||return undef; 
-$self->atcomm("AT#VSR=7200","OK")||return undef;
-$self->atcomm("AT#VSD=1","OK")||return undef; 
-$self->atcomm("AT#BDR=16","OK")||return undef;
-$self->atcomm("AT#VLS=2","VCON")||return undef;
-#$self->atcomm("ATL3","OK")||return undef;
-unlink("$tmpmsg");
-print LOG "Port Configured for Voice \n";
+    my $self=shift;
+    $self->pulse_dtr_on(500)||return undef;
+    $self->pulse_dtr_off(500)||return undef;
+    $self->atcomm("ATZ","OK") ||return undef; 
+    $self->atcomm("AT&F1","OK") ||return undef;
+    $self->atcomm("AT&C1&D2&K3M2L3","OK")||return undef; 
+    $self->atcomm("AT#CLS=8","OK")||return undef;
+    $self->atcomm("AT","OK")||return undef; 
+    $self->atcomm("ATS91=50","OK")||return undef;
+    $self->atcomm("AT#VBS=4","OK")||return undef;
+    $self->atcomm("AT#VSP=2","OK")||return undef;
+    $self->atcomm("AT#VTD=3F,3F,3F","OK")||return undef; 
+    $self->atcomm("AT#VSR=7200","OK")||return undef;
+    $self->atcomm("AT#VSD=1","OK")||return undef; 
+    $self->atcomm("AT#BDR=16","OK")||return undef;
+    $self->atcomm("AT#VLS=2","VCON")||return undef;
+    #$self->atcomm("ATL3","OK")||return undef;
+    unlink("$tmpmsg");
+    print LOG "Port Configured for Voice \n";
 }
-sub setport
-{
-my $self=shift;
-my $baud=shift;
-my $parity=shift;
-my $data=shift;
-my $stop=shift;
-my $hand=shift;
-my $buff=shift;
-$self->baudrate($baud)||return undef;
-$self->parity($parity)||return undef;
-$self->databits($data)||return undef;
-$self->stopbits($stop)||return undef;
-$self->handshake($hand)||return undef;
-$self->buffers($buff,$buff)||return undef;
-$self->write_settings;
-print LOG "Port Configuration changed\n"||die "failed write";
-return 1;
+sub setport {
+    my $self=shift;
+    my $baud=shift;
+    my $parity=shift;
+    my $data=shift;
+    my $stop=shift;
+    my $hand=shift;
+    my $buff=shift;
+    $self->baudrate($baud)||return undef;
+    $self->parity($parity)||return undef;
+    $self->databits($data)||return undef;
+    $self->stopbits($stop)||return undef;
+    $self->handshake($hand)||return undef;
+    $self->buffers($buff,$buff)||return undef;
+    $self->write_settings;
+    print LOG "Port Configuration changed\n"||die "failed write";
+    return 1;
 }
-
+		
 sub waitring {
-my $self=shift;
-my $callid="";
-print LOG "Waiting for ring from ",`date`;
-$self->atcomm("AT#VLS=0","OK")||return undef;
-$self->atcomm("AT#CLS=8","OK")||return undef;
-while (!($self->input=~/[RING]/)){}
-$callid=$self->input;
-$self->atcomm("ATA","")||return undef;
-$self->atcomm("AT#VLS=0","VCON")||return undef;
-$self->atcomm("AT#VTX","CONNECT")||return undef;
-print LOG "Call from <$callid> received at ",`date`;
-return $callid;
+    my $self=shift;
+    my $callid="";
+    print LOG "Waiting for ring from ",`date`;
+    $self->atcomm("AT#VLS=0","OK")||return undef;
+    $self->atcomm("AT#CLS=8","OK")||return undef;
+    while (!($self->input=~/[RING]/)){}
+        $callid=$self->input;
+        $self->atcomm("ATA","")||return undef;
+        $self->atcomm("AT#VLS=0","VCON")||return undef;
+        $self->atcomm("AT#VTX","CONNECT")||return undef;
+        print LOG "Call from <$callid> received at ",`date`;
+        return $callid;
 }
 
 sub atcomm {
-my $self=shift;
-my $atstr=shift;
-my $waitfor=shift;
-my $oltime=time;
-my $getstr="";
-#$atstr=$atstr."AT\r";
-$self->write("$atstr\r");
-while (!($getstr=~/$waitfor/))
-{
-$getstr=$getstr.$self->input;
-if (((time - $oltime)>5)||($getstr=~/[b]/))
-{
-print LOG "Modem failed to reply <$atstr> \n";
-#$self->pclose ;
-return undef;
-}
-}
-#return $getstr;
-#print "$atstr -> $getstr\n";
-return 1;
+    my $self=shift;
+    my $atstr=shift;
+    my $waitfor=shift;
+    my $oltime=time;
+    my $getstr="";
+    #$atstr=$atstr."AT\r";
+    $self->write("$atstr\r");
+    while (!($getstr=~/$waitfor/)) {
+        $getstr=$getstr.$self->input;
+        if (((time - $oltime)>5)||($getstr=~/[b]/)) {
+            print LOG "Modem failed to reply <$atstr> \n";
+            #$self->pclose ;
+            return undef;
+        }
+    }
+    #return $getstr;
+    print "$atstr -> $getstr\n";
+    return 1;
 }
 
-sub faxmode
-{
-my $self=shift;
-$self->atcomm("\020\003\020\003","VCON");
-$self->atcomm("AT#BDR=0","OK");
-$self->atcomm("AT#CLS=2","OK");
+sub faxmode {
+    my $self=shift;
+    $self->atcomm("\020\003\020\003","VCON");
+    $self->atcomm("AT#BDR=0","OK");
+    $self->atcomm("AT#CLS=2","OK");
 }
 
 sub playfile {
-my $self=shift;
-my $playfile=shift;
-$playfile=$tmpmsg if $playfile eq "";
-if (substr($playfile,0,1) ne "/")
-{$playfile="$vdir/$playfile";}
-if (!(-e $playfile))
-{print LOG "File $playfile not found\n";return undef;}
-my $ndtmf=shift;
-$ndtmf=0 if !($ndtmf);
-my $rdtmf="";
-my $dtmf="";
-my $tmp;
-my $dtcount =0;
-open (FH1,$playfile);
-read FH1,$tmp,4;
-if ($tmp ne "RMD1")
-{
-close FH1;
-system "$bindir/lintopvf -s 7200 $playfile $tmpmsg.1";
-system "$bindir/pvftormd Rockwell 4 $tmpmsg.1 $tmpmsg.2";
-open (FH1,"$tmpmsg.2");
-}
-while (!eof(FH1))
-{
-read FH1,$tmp,1000;
-$tmp=$self->rmdle($tmp);
-$self->write($tmp);
-$self->write_drain;
-$dtmf=$self->input; 
-last if ($dtmf=~/[0-9]/) && ($ndtmf !=0);
-if ($dtmf=~/[b]/)
-{
-print LOG "User hanged up before call was finished\n";
-return undef;
-}
-}
-unlink("$tmpmsg");
-system "touch $tmpmsg";
-if ($ndtmf == 0)
-{
-return 1;
-}
-if ($ndtmf==1)
-{
-return join('', split(/\W/,$dtmf));
-} 
-$rdtmf=$dtmf;
-open (FH1,"$vdir/tsil15");
-
-while (!eof(FH1))
-{
-read FH1,$tmp,1000;
-$tmp=$self->rmdle($tmp);
-$self->write($tmp);
-$self->write_drain;
-$dtmf=$self->input; 
-$rdtmf=$rdtmf.$dtmf if ($dtmf=~/[0-9]/);
-if ($dtmf=~/[b]/)
-{
-print LOG "User hanged up before call was finished\n";
-return undef;
-}
-last if (length($rdtmf)==$ndtmf*2);
-}
-return " " if !($rdtmf=~/[0-9]/);
-return join('', split(/\W/, $rdtmf));
+    my $self=shift;
+    my $playfile=shift;
+    $playfile=$tmpmsg if $playfile eq "";
+    if (substr($playfile,0,1) ne "/") {$playfile="$vdir/$playfile";}
+    if (!(-e $playfile)) {print LOG "File $playfile not found\n";return undef;}
+    my $ndtmf=shift;
+    $ndtmf=0 if !($ndtmf);
+    my $rdtmf="";
+    my $dtmf="";
+    my $tmp;
+    my $dtcount =0;
+    open (FH1,$playfile);
+    read FH1,$tmp,4;
+    if ($tmp ne "RMD1") {
+        close FH1;
+        system "$bindir/lintopvf -s 7200 $playfile $tmpmsg.1";
+        system "$bindir/pvftormd Rockwell 4 $tmpmsg.1 $tmpmsg.2";
+        open (FH1,"$tmpmsg.2");
+    }
+    while (!eof(FH1)) {
+        read FH1,$tmp,1000;
+        $tmp=$self->rmdle($tmp);
+        $self->write($tmp);
+        $self->write_drain;
+        $dtmf=$self->input; 
+        last if ($dtmf=~/[0-9]/) && ($ndtmf !=0);
+        if ($dtmf=~/[b]/) {
+            print LOG "User hanged up before call was finished\n";
+            return undef;
+        }
+    }
+    unlink("$tmpmsg");
+    system "touch $tmpmsg";
+    if ($ndtmf == 0) {
+        return 1;
+    }
+    if ($ndtmf==1) {
+        return join('', split(/\W/,$dtmf));
+    } 
+    $rdtmf=$dtmf;
+    open (FH1,"$vdir/tsil15");
+    while (!eof(FH1)) {
+        read FH1,$tmp,1000;
+        $tmp=$self->rmdle($tmp);
+        $self->write($tmp);
+        $self->write_drain;
+        $dtmf=$self->input; 
+        $rdtmf=$rdtmf.$dtmf if ($dtmf=~/[0-9]/);
+        if ($dtmf=~/[b]/) {
+            print LOG "User hanged up before call was finished\n";
+            return undef;
+        }
+        last if (length($rdtmf)==$ndtmf*2);
+    }
+    return " " if !($rdtmf=~/[0-9]/);
+    return join('', split(/\W/, $rdtmf));
 }
 
-sub recfile
-{
-my $self=shift;
-my $recfile = shift;
-my $ttime=shift;
-$self->atcomm("\020\003\020\003","VCON");
-$self->atcomm("AT#VRX","CONNECT")||return undef;
-open (FH1,">$recfile");
-print FH1 "RMD1Rockwell";
-my $rmdstr=pack("C20",0,0,0,0,0,0,0,0,0,4,28,32,4,0,0,0,0,0,0,0);
-print FH1 $rmdstr;
-my $otimer=time;
-while ((time-$otimer)<$ttime)
-{
-print FH1 $self->input;
-}
-close FH1;
-if ($self->input=~/[b]/)
-{
-print LOG "User hanged up before call was finished\n";
-return undef;
-}
-print LOG "Message file $recfile recorded\n";
-$self->atcomm("\020\030\020\003","VCON")||return undef;
-$self->atcomm("AT#VTX","CONNECT")||return undef;
-return 1;
+sub recfile {
+    my $self=shift;
+    my $recfile = shift;
+    my $ttime=shift;
+    $self->atcomm("\020\003\020\003","VCON");
+    $self->atcomm("AT#VRX","CONNECT")||return undef;
+    open (FH1,">$recfile");
+    print FH1 "RMD1Rockwell";
+    my $rmdstr=pack("C20",0,0,0,0,0,0,0,0,0,4,28,32,4,0,0,0,0,0,0,0);
+    print FH1 $rmdstr;
+    my $otimer=time;
+    while ((time-$otimer)<$ttime) {
+        print FH1 $self->input;
+    }
+    close FH1;
+    if ($self->input=~/[b]/) {
+        print LOG "User hanged up before call was finished\n";
+        return undef;
+    }
+    print LOG "Message file $recfile recorded\n";
+    $self->atcomm("\020\030\020\003","VCON")||return undef;
+    $self->atcomm("AT#VTX","CONNECT")||return undef;
+    return 1;
 }
 
-sub addmsg
-{
-my $self=shift;
-my $playfile=shift;
-system "cat $vdir/$playfile >> $tmpmsg";
+sub addmsg {
+    my $self=shift;
+    my $playfile=shift;
+    system "cat $vdir/$playfile >> $tmpmsg";
 }
 
-sub addval
-{
-my $self=shift;
-my $num1=shift;
-my $num2;
-my $num3;
-$num1="0".$num1 while (length($num1) ne 9);
-$num2=substr($num1,0,2);
-$self->addint1($num2,"crore");
-$num2=substr($num1,2,2);
-$self->addint1($num2,"lack");
-$num2=substr($num1,4,2);
-$self->addint1($num2,"thousand");
-$num2=substr($num1,6,1);
-system "cat $vdir/$num2 $vdir/hundred >> $tmpmsg" if ($num2 != 0);
-$num2=substr($num1,7,2);
-$self->addint1($num2,"sil0");
-return ;
+sub addval {
+    my $self=shift;
+    my $num1=shift;
+    my $num2;
+    my $num3;
+    $num1="0".$num1 while (length($num1) ne 9);
+    $num2=substr($num1,0,2);
+    $self->addint1($num2,"crore");
+    $num2=substr($num1,2,2);
+    $self->addint1($num2,"lack");
+    $num2=substr($num1,4,2);
+    $self->addint1($num2,"thousand");
+    $num2=substr($num1,6,1);
+    system "cat $vdir/$num2 $vdir/hundred >> $tmpmsg" if ($num2 != 0);
+    $num2=substr($num1,7,2);
+    $self->addint1($num2,"sil0");
+    return ;
 }
 
-sub addint1
-{
-my $self=shift;
-my $num2=shift;
-my $unit=shift;
-my $num3;
-if (($num2<21)&&($num2>0))
-{
-$num2=int($num2);
-system "cat $vdir/$num2 >> $tmpmsg";
-}
-if ($num2>20)
-{
-$num3=10*substr($num2,0,1);
-system "cat $vdir/$num3 >> $tmpmsg";
-$num3=substr($num2,1,1);
-system "cat $vdir/$num3 >> $tmpmsg";
-}
-system "cat $vdir/$unit >> $tmpmsg" if ($num2 != 0);
-return;
+sub addint1 {
+    my $self=shift;
+    my $num2=shift;
+    my $unit=shift;
+    my $num3;
+    if (($num2<21)&&($num2>0)) {
+        $num2=int($num2);
+        system "cat $vdir/$num2 >> $tmpmsg";
+    }
+    if ($num2>20) {
+        $num3=10*substr($num2,0,1);
+        system "cat $vdir/$num3 >> $tmpmsg";
+        $num3=substr($num2,1,1);
+        system "cat $vdir/$num3 >> $tmpmsg";
+    }
+    system "cat $vdir/$unit >> $tmpmsg" if ($num2 != 0);
+    return;
 }
 
-sub addmil
-{
-my $self=shift;
-my $num1=shift;
-my $num2;
-my $num3;
-$num1="0".$num1 while (length($num1) ne 9);
-$num2=substr($num1,0,3);
-$self->addint2($num2,"crore");
-$num2=substr($num1,3,3);
-$self->addint2($num2,"thousand");
-$num2=substr($num1,6,3);
-$self->addint2($num2,"sil0");
-return ;
+sub addmil {
+    my $self=shift;
+    my $num1=shift;
+    my $num2;
+    my $num3;
+    $num1="0".$num1 while (length($num1) ne 9);
+    $num2=substr($num1,0,3);
+    $self->addint2($num2,"crore");
+    $num2=substr($num1,3,3);
+    $self->addint2($num2,"thousand");
+    $num2=substr($num1,6,3);
+    $self->addint2($num2,"sil0");
+    return ;
 }
 
-sub addint2
-{
-my $self=shift;
-my $num2=shift;
-my $unit=shift;
-my $num3=0;
-$num3=substr($num2,0,1);
-system "cat $vdir/$num3 $vdir/hundred >> $tmpmsg" if ($num3 != 0);
-$num2=substr($num2,1,2);
-if (($num2<21)&&($num2>0))
-{
-$num2=int($num2);
-system "cat $vdir/$num2 >> $tmpmsg";
-}
-if ($num2>20)
-{
-$num3=10*substr($num2,0,1);
-system "cat $vdir/$num3 >> $tmpmsg";
-$num3=substr($num2,1,1);
-system "cat $vdir/$num3 >> $tmpmsg";
-}
-system "cat $vdir/$unit >> $tmpmsg" if ($num2 != 0);
-return;
+sub addint2 {
+    my $self=shift;
+    my $num2=shift;
+    my $unit=shift;
+    my $num3=0;
+    $num3=substr($num2,0,1);
+    system "cat $vdir/$num3 $vdir/hundred >> $tmpmsg" if ($num3 != 0);
+    $num2=substr($num2,1,2);
+    if (($num2<21)&&($num2>0)) {
+        $num2=int($num2);
+        system "cat $vdir/$num2 >> $tmpmsg";
+    }
+    if ($num2>20) {
+        $num3=10*substr($num2,0,1);
+        system "cat $vdir/$num3 >> $tmpmsg";
+        $num3=substr($num2,1,1);
+        system "cat $vdir/$num3 >> $tmpmsg";
+    }
+    system "cat $vdir/$unit >> $tmpmsg" if ($num2 != 0);
+    return;
 }
 
-sub addtxt
-{
-my $self = shift;
-my $pstr = shift;
-my $i=0;
-my $pchr="";
-while ($i!=length($pstr))
-{
-$pchr=lc(substr($pstr,$i,1));
-system "cat $vdir/$pchr >> $tmpmsg"||return undef;
-$i++;
+sub addtxt {
+    my $self = shift;
+    my $pstr = shift;
+    my $i=0;
+    my $pchr="";
+    while ($i!=length($pstr)) {
+        $pchr=lc(substr($pstr,$i,1));
+        system "cat $vdir/$pchr >> $tmpmsg"||return undef;
+        $i++;
+    }
 }
 
+sub addate {
+    my $self=shift;
+    my $num1=shift;
+    my $num2="";
+    $num2=substr($num1,0,2);
+    $self->addval($num2);
+    $num2=substr($num1,2,2);
+    #$num2=abs($num2);
+    $num2="m$num2";
+    system "cat $vdir/$num2 >> $tmpmsg";
+    $num2=substr($num1,4,4);
+    #$num2=substr($num1,2,2) if (substr($num1,0,2) eq 19);
+    $self->addval($num2);
+    return;
 }
 
-sub addate
-{
-my $self=shift;
-my $num1=shift;
-my $num2="";
-$num2=substr($num1,0,2);
-$self->addval($num2);
-$num2=substr($num1,2,2);
-#$num2=abs($num2);
-$num2="m$num2";
-system "cat $vdir/$num2 >> $tmpmsg";
-$num2=substr($num1,4,4);
-#$num2=substr($num1,2,2) if (substr($num1,0,2) eq 19);
-$self->addval($num2);
-return;
+sub rmdle {
+    my $self=shift; 
+    my $tmp=shift;
+    my $tmp1="";
+    my $i;
+    for ($i=0;$i<length($tmp);$i++) {
+        if (substr($tmp,$i,1)=~/[\020]/) {$tmp1=$tmp1."\020";}
+        $tmp1=$tmp1.substr($tmp,$i,1);
+    }
+    return $tmp1;
 }
 
-sub rmdle
-{
-my $self=shift; 
-my $tmp=shift;
-my $tmp1="";
-my $i;
-for ($i=0;$i<length($tmp);$i++)
-{
-if (substr($tmp,$i,1)=~/[\020]/)
-{$tmp1=$tmp1."\020";}
-$tmp1=$tmp1.substr($tmp,$i,1);
-}
-return $tmp1;
-}
-
-sub closep
-{
-my $self=shift;
-unlink ("$tmpmsg");
-unlink ("$tmpmsg.1");
-unlink ("$tmpmsg.2");
-$self->atcomm("\020\030\020\003","VCON");
-$self->atcomm("ATH","OK");
-$self->atcomm("ATZ","OK");
-$self->pclose
+sub closep {
+    my $self=shift;
+    unlink ("$tmpmsg");
+    unlink ("$tmpmsg.1");
+    unlink ("$tmpmsg.2");
+    $self->atcomm("\020\030\020\003","VCON");
+    $self->atcomm("ATH","OK");
+    $self->atcomm("ATZ","OK");
+    $self->pclose
 }
 
 
 1;
 __END__
-# Below is the stub of documentation for your module. You better edit it!
 
 =head1 NAME
 
@@ -1085,49 +1054,60 @@ Ivrs - Perl extension for Interactive Voice Response System.
 
 =head1 SYNOPSIS
 
-use Ivrs;
-$portname="ttyS1" # modem port  
-$vdir="sfiles" # voice file directory the default is sfiles
-$iv = new Ivrs($portname,$vdir);
-
+$iv = new Ivrs($portname,$vdir,$bindir);
 
 =head1 DESCRIPTION
+
 This module provides the complete interface to voice modem for Interactive
 Voice Response System (IVRS). The IVRS are widely used for telebanking,
 product inforamtion, tele marketing, voice mail, fax servers, and many more.
-All these can be implemented using this module with very few lines of code.
 
+All these can be implemented using this module and with very few lines of code.
 This module takes care of all the low level function for serial port and
 modem. 
 
 =head1 EXAMPLE
-This is simple example of the code which initializes the modem on serial
-port /dev/ttyS1 and waits for the ring. When a call comes it receives the
-call plays the greeting message (sfile/greet) and ask for caller input via
-DTMF code. The received DTMF codes are played to call digit and numerial
-format. It also says that account number is wrong and finally thanks the
-caller.
 
-use Ivrs;
-$vdir="sfiles";
-$iv = new Ivrs("ttyS1");
-$iv->setport("38400","none","8","1","rts","8096")||die"Setting Failed\n";
-$iv->initmodem||die"Modem failed";
+The demo files are short and with full of explanation, which should serve to understanding of module.
+
+demo1 - A simple voice interaction.
+
+demo2 - Message recording and playback.
+
+demo3 - Fax server.
+
+=head1 METHODS
+
+$iv = new Ivrs('ttyS1',$vdir,$bindir);
+
+The first variable is the mdoem/serial port.
+
+You must specify $vdir and $bindir if you want to use other than default
+(namely sfiles/ or bin/). If you are running IVRS from /etc/inittab than
+also absolute path will be rquired.
+
+$iv->setport('38400','none','8','1','rts','8096');
+
+The serial port parameters are set here. These parameters are carefully
+worked after extensive trials. Change these only if you know what are you
+doing.
+
+$iv->initmodem;
+
+This will put the modem in voice mode. Number of AT commands are required to
+set this. Again do not change any thing here also, unless you are sure.
+
 $cid=$iv->waitring;
-$accno=$iv->playfile("greet","4");
-$iv->addval($accno);
-$iv->addmsg("sory");
-$iv->addtxt($accno);
-$iv->playfile;
-sleep 2;
-$iv->addmsg("thank");
-$iv->playmsg;
-sleep 2;
-$iv->closep;
-exit;
 
-=head METHODS
+This will put the modem in annswer mode and wait for the ring. When the ring
+comes call will be received and Caller ID will be returned in $cid (not
+tested so far). If you want to play a message through Modem speaker then
+skip it, but then you will not be able to punch DTMF codes. 
+
+
 $iv->playfile("$msgfile","$dtmf")
+
+This requires a lot of explanation.
 
 $msgfile can be rmd or lin sound file generated by pvftools (See Sound
 Files later). You can specify the full path of the file with / or only file 
@@ -1136,21 +1116,26 @@ will play special file contained in $tmpmsg. We will discuss this file in next
 section.
 
 Another variable required is $dtmf. 
+
 If $dtmf=0 then playing will not be stopped even if caller presses any key.
 
-If $dtmf=1 then the specified file will played and if caller presses any key
+If $dtmf=1, then the specified file will played and if caller presses any key
 then playing will immidiately stop and $iv->playfile will return the digit
 pressed.
 
-If $dtmf=2 or more then playing of specified file will stopped when caller
+If $dtmf=2 or more, then playing of specified file will stopped when caller
 presses first digit and next a silence of 15 seconds will played for caller
 to enter remaining digits. When caller has pressed required number of digits
 ($dtmf) then $iv->playfile will return with complete dtmf digits.
 
 $iv->addmsg($msg)
+
 $iv->addval($val)
+
 $iv->addmil($val)
+
 $iv->addtxt("ABCDEF")
+
 $iv->addate("20001212")
 
 Any IVRS requires many messages to generated on fly and then played to
@@ -1162,29 +1147,41 @@ file specified by $tmpmsg, and finally this file is converted to rmd (again
 pvftools ) and then played to caller.
 
 $iv->addmsg($msg)
+
 Add a message from sfiles/
+
 $iv->addval($val)
+
 Add a numeric value in Indian format (using lacs and crore)
+
 $iv->addmil($val)
+
 Same as above but with Internation format (using milions and billions)
+
 $iv->addtxt("ABCDEF")
+
 Add alphabetical characters
+
 $iv->addate("20001212")
+
 Add date in yyyymmdd format.
 
 $iv->recfile($filename,$duration)
+
 This will record the file $filename in rmd file format with proper header
 for a period of $duration seconds. This rmd file can be converted to any
 format using pvftools.
 
 $iv->closep
+
 This will do some cleanup and hangup the line and reset the modem.
 
-The demo files demo1.pl demo2.pl and demo3.pl has good examples for
+The demo files demo1 demo2 and demo3 are good examples for
 implementation of IVRS.
 I will add some more demo files in future release.
 
 =head1 THANKS
+
 I must thank Bill Birthisel, wcbirthisel@alum.mit.edu, for serial port code
 taken from SerialPort.pm,
 
@@ -1193,6 +1190,7 @@ taken from SerialPort.pm,
 Mukund Deshmukh <betacomp@nagpur.dot.net.in>
 
 =head1 SEE ALSO
+
 SerialPort.pm, pvftools
 
 =cut

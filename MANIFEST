@@ -3,9 +3,3 @@ Ivrs.pm
 Makefile.PL
 MANIFEST
 test.pl
-Readme.html
-demo1.pl
-demo2.pl
-demo3.pl
-bin/
-sfiles/
