@@ -1,9 +1,11 @@
 #!/usr/bin/perl
 #This is simple demo script showing some basic operations. 
 #It initializes the serial port,
-#Waits for ring on the modem, when a call comes, plays the file bgreet,
-#takes the dtmf code from the caller and finally says sorry and plays , 
+#Waits for ring on the modem, when a call comes, play the file bgreet,
+#takes the dtmf code from the caller and finally says sorry and plays, 
 #the dtmf code received in numeriacal format, date, and some text.
+#And transfers the call to another phone number.
+#Works with US Robotics modem also.
 
 require 5.000;
 use Ivrs;
@@ -13,9 +15,10 @@ $portname=$ARGV[0];
 die "\n usage: $0 ttyS0 or ttyS1\n\n" if ($portname eq "");
 
 #Set the voice file directory. The absolute path is required if you want to
-#run the IVRS from the inittab or any other directory.  
+#run the IVRS from the inittab or any other directory. The defaults are 
+#'sfile'  in the current directory.
 #The voice files for Rockwel Chip Set modem are in 'sfiles' directory,
-#The voice files for US Robotics modem are in 'ufiles' directory, 
+#The voice files for US Robotics modem are in 'ufiles' directory,
 
 $vdir="sfiles";
 
@@ -51,16 +54,12 @@ print "The caller has punched $accno dtmf codes \n";
 $iv->addval($accno);
 $iv->addmsg("sory");
 $iv->addmsg("waccno");
-$iv->addmil("1123456");
-$iv->addate("12122000");
-$iv->addtxt("ABCEFGH");
 
 #play the final file and accept one DTMF just to stop the playing of message. 
 $iv->playfile("","1")||&closeall;
 
 #close the port 
-$iv->addmsg("thank");
-$iv->playfile||&closeall;
+$iv->callxfer("21");
 &closeall;
 exit 1;
 

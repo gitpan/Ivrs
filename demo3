@@ -14,6 +14,9 @@ die "\n usage: $0 ttyS0 or ttyS1\n\n" if ($portname eq "");
 #Set the voice file directory. The absolute path is required if you want to
 #run the IVRS from the inittab. The defaults are 'sfile' and 'bin' from the
 #current directory.
+#The voice files for Rockwel Chip Set modem are in 'sfiles' directory,
+#The voice files for US Robotics modem are in 'ufiles' directory,
+
 $vdir="sfiles";
 
 #initialize the serial port
@@ -47,7 +50,7 @@ sleep 1;
 #open (STDERR,">>/dev/null");
 
 system "efix -p8x3 -n /tmp/faxmsg faxmsg.txt";
-system "efax -d /dev/$portname -o1 -jX3 -t T /tmp/faxmsg";
+system "efax -d /dev/$portname -o1 -jX3 -tT /tmp/faxmsg";
 unlink ("/tmp/faxmsg");
 
 

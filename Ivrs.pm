@@ -52,7 +52,7 @@ use Carp;
 use strict;
 
 use vars qw($VERSION @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS);
-$VERSION = '0.07';
+$VERSION = '0.10';
 
 require Exporter;
 
@@ -110,7 +110,14 @@ my %c_cc_fields = (
 my $vdir="sfiles";
 my $logfile="/var/log/Ivrs_Log";
 my $tmpmsg="/tmp/tmpmsg";
-my $rmdhdr="RMD1Rockwell".pack("C20",0,0,0,0,0,0,0,0,0,4,28,32,4,0,0,0,0,0,0,0);
+
+#These headers are required for recorded files only.
+#my $rmdhdr="";
+# For Rockwell chip set modem
+#my $rmdhdr="RMD1Rockwell".pack("C20",0,0,0,0,0,0,0,0,0,4,28,32,4,0,0,0,0,0,0,0);
+# For US Robotics modem
+#my $rmdhdr="RMD1US Robotics".pack("C17",0,0,0,0,0,0,8,31,64,1,0,0,0,0,0,0,0);
+
 my $Babble = 1; #Set to 0 if you do not want lots of garbage in Log File.
 my $testactive = 0;	# test mode active
 my @Yes_resp = (
@@ -718,18 +725,29 @@ sub initmodem {
     $self->atcomm("ATZ","OK") ||return undef; 
     $self->atcomm("AT&C1&D2&K3M2L3","OK")||return undef; 
     $self->atcomm("AT#CLS=8","OK")||return undef;
-    $self->atcomm("AT","OK")||return undef; 
-    $self->atcomm("AT#VBS=4","OK")||return undef;
-    $self->atcomm("AT#VSP=2","OK")||return undef;
-    $self->atcomm("AT#VTD=3F,3F,3F","OK")||return undef; 
-    $self->atcomm("AT#VSR=7200","OK")||return undef;
-    $self->atcomm("AT#VSD=1","OK")||return undef; 
-    $self->atcomm("AT#BDR=16","OK")||return undef;
+#These are some of the Rockwell specific commands, enable them if your
+#Modem does not work.
+#    $self->atcomm("AT","OK")||return undef; 
+#    $self->atcomm("AT#VBS=4","OK")||return undef;
+#    $self->atcomm("AT#VSP=2","OK")||return undef;
+#    $self->atcomm("AT#VTD=3F,3F,3F","OK")||return undef; 
+#    $self->atcomm("AT#VSR=7200","OK")||return undef;
+#    $self->atcomm("AT#VSD=1","OK")||return undef; 
+#    $self->atcomm("AT#BDR=0","OK")||return undef;
+
+#These are some of the USRobotic specific commands, enable them if your
+#Modem does not work.
+#    $self->atcomm("AT#VTM=0","OK")||return undef;
+#    $self->atcomm("AT#VSR=8000","OK")||return undef;
+#    $self->atcomm("AT#VGT=255","OK")||return undef;
+
+#Do not comment out these!!
     $self->atcomm("AT#VLS=2","VCON")||return undef;
     $self->atcomm("ATL3","OK")||return undef;
     unlink("$tmpmsg");
     print LOG "Port Configured for Voice \n";
 }
+
 sub setport {
     my $self=shift;
     my $baud=shift;
@@ -743,7 +761,8 @@ sub setport {
     $self->databits($data)||return undef;
     $self->stopbits($stop)||return undef;
     $self->handshake($hand)||return undef;
-    $self->buffers($buff,$buff)||return undef;
+    #$self->buffers($buff,$buff)||return undef;
+    $self->buffers(0,0)||return undef;
     $self->write_settings;
     print LOG "Port Configuration changed\n";
     return 1;
@@ -755,10 +774,10 @@ sub waitring {
     print LOG "Waiting for ring from ",`date`;
     $self->atcomm("AT#VLS=0","OK")||return undef;
     $self->atcomm("AT#CLS=8","OK")||return undef;
-    while (!($self->input=~/[RING]/)){}
+    while (!($self->input=~/[RING]/)){sleep 1;}
     $callid=$self->input;
     $self->atcomm("ATA","")||return undef;
-    $self->atcomm("AT#VLS=0","VCON")||return undef;
+    $self->atcomm("AT#VLS=2","VCON")||return undef;
     $self->atcomm("AT#VTX","CONNECT")||return undef;
     print LOG "Call from <$callid> received at ",`date`;
     return $callid;
@@ -766,12 +785,37 @@ sub waitring {
 
 sub dialout
 {
-#NOT YET IMPLEMENTED
+#This is experimental only. Most of the modem fail to detect ring back, 
+#and pick up, even before the receiver is lifted by called number.
+    my $self=shift;
+    my $telno = shift;
+    my $cstring ="ATX1DT".$telno;
+    $self->atcomm("AT#VLS=0","OK");
+    $self->atcomm("AT#CLS=8","OK");
+    $self->atcomm($cstring,"VCON");
+    $self->atcomm("AT#VLS=2","VCON")||return undef;
+    $self->atcomm("AT#VTX","CONNECT")||return undef;
+    print LOG "Dialing  $telno \n" if $Babble;
+
 }
 
 sub callxfer
 {
-#NOT YET IMPLEMENTED
+
+#This is experimental only. Most of the modem fail to detect ring back,
+#and pick up, even before the receiver is lifted by called number.
+
+my $self=shift;
+    my $telno = shift;
+    $self->atcomm("\020\003\020\003","VCON");
+    my $cstring ="ATX1DT".$telno;
+    $self->atcomm("AT#VLS=0","OK");
+    $self->atcomm("AT#CLS=8","OK");
+    $self->atcomm("ATDP1","");
+    sleep 2;
+    $self->atcomm($cstring,"OK");
+    $self->atcomm("ATH","OK")||return undef;
+    print LOG "Transfered to $telno \n" if $Babble;
 }
 
 sub atcomm {
@@ -799,7 +843,8 @@ sub faxmode {
     my $self=shift;
     $self->atcomm("\020\003\020\003","VCON");
     $self->atcomm("AT#BDR=0","OK");
-    $self->atcomm("AT#CLS=2","OK");
+    $self->atcomm("AT#CLS=0","OK");
+    $self->atcomm("AT+FCLASS=1","OK");
     print LOG "Fax mode set \n" if $Babble;
 }
 
@@ -822,8 +867,6 @@ sub playfile {
     my $tmp;
     my $dtcount =0;
     open (FH1,$playfile);
-    $self->write($rmdhdr);
-    $self->write_drain;
     while (!eof(FH1)) {
         read FH1,$tmp,1000;
         $self->write($tmp);
@@ -835,18 +878,22 @@ sub playfile {
             return undef;
         }
     }
-    unlink("$tmpmsg") if $playfile=="$tmpmsg";
+    unlink("$tmpmsg") if $playfile eq "$tmpmsg";
     if ($ndtmf == 0) {
-        return 1;
+	$self->atcomm("\020\030\020\003","VCON") ||return undef;
+        $self->atcomm("AT#VTX","CONNECT")||return undef;
+	return 1;
     }
     if ($ndtmf==1) {
+    $self->atcomm("\020\030\020\003","VCON") ||return undef;
+    $self->atcomm("AT#VTX","CONNECT")||return undef;
     return join('', split(/\W/,$dtmf))  if $dtmf;
-    return 1;
+    return " ";
     } 
     $rdtmf=$dtmf;
+    $self->atcomm("\020\030\020\003","VCON") ||return undef;
+    $self->atcomm("AT#VTX","CONNECT")||return undef;
     open (FH1,"$vdir/tsil15");
-    $self->write($rmdhdr);
-    $self->write_drain;
     while (!eof(FH1)) {
         read FH1,$tmp,1000;
         $self->write($tmp);
@@ -859,6 +906,8 @@ sub playfile {
         }
         last if (length($rdtmf)==$ndtmf*2);
     }
+    $self->atcomm("\020\030\020\003","VCON") ||return undef;
+    $self->atcomm("AT#VTX","CONNECT")||return undef;
     return " " if !($rdtmf=~/[0-9]/);
     return join('', split(/\W/, $rdtmf));
 }
@@ -870,7 +919,7 @@ sub recfile {
     $self->atcomm("\020\003\020\003","VCON");
     $self->atcomm("AT#VRX","CONNECT")||return undef;
     open (FH1,">$recfile");
-    print FH1 $rmdhdr;
+#    print FH1 $rmdhdr;
     my $otimer=time;
     while ((time-$otimer)<$ttime) {
         print FH1 $self->input;
@@ -889,7 +938,7 @@ sub recfile {
 sub addmsg {
     my $self=shift;
     my $playfile=shift;
-    my $self=shift;
+    my $self1=shift;
     my $tmp="";
     open (FHO, ">>$tmpmsg");
     open (FHI, "<$vdir/$playfile");
@@ -935,7 +984,7 @@ sub addint1 {
         $num3=10*substr($num2,0,1);
         $self->addmsg($num3);
         $num3=substr($num2,1,1);
-        $self->addmsg($num3);
+        $self->addmsg($num3) if ($num3 !=0);
     }
     $self->addmsg($unit) if ($num2 != 0);
     return;
@@ -973,7 +1022,7 @@ sub addint2 {
         $num3=10*substr($num2,0,1);
         $self->addmsg($num3);        
         $num3=substr($num2,1,1);
-        $self->addmsg($num3);        
+        $self->addmsg($num3) if ($num3 !=0);        
     }
     $self->addmsg($unit) if ($num2 != 0);    
     return;
@@ -1172,14 +1221,16 @@ format using pvftools.
 
 =head2 Other Functions.
 
-$iv->dialout
+$iv->dialout($telno)
 
-For dialing out a number - NOT IMPLEMENTED YET.
+You can dial out a number, however code is experimental, it worked
+with US Robotics modem only. 
 
+$iv->callxfer($telno)
 
-$iv->callxfer
+You can transfer a call,  however code is experimental, it worked
+with US Robotics modem only.
 
-For transfering the call to another extension - NOT IMPLEMENTED YET.
 
 
 $iv->faxmode
@@ -1202,7 +1253,7 @@ taken from SerialPort.pm,
 
 =head1 COPYRIGHT
 
-Copyright (c) 2000 Mukund Deshmukh. All rights reserved. This program is free
+Copyright (c) 2002 Mukund Deshmukh. All rights reserved. This program is free
 software; you can redistribute it and/or modify it under the same terms
 as Perl itself.
 

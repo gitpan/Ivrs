@@ -37,7 +37,7 @@ number, line quality diagnosis etc.  Due to use of modem, this IVRS is
 limited to two channel (or Telephone lines), because PC has only two serial 
 ports. Multi port serial card can be installed but I have not tested it. In 
 my opinion this not a limitations as single modem based IVRS can cater to 
-almost 3000 callers. I have tested Dlink, GVC, and LanBit modems with this 
+almost 3000 callers. I have tested Dlink, GVC, LanBit, US Robotics modems with this 
 module. The modem speed does not matter because voice modem with 33.6 KBPS 
 and above will work fine. I have seen other IVRS, which uses Dialogic Cards,
 these cards are nothing but the multiple modems (2, 4, 8, 16) on ISA or PCI 
@@ -116,7 +116,7 @@ OEM (Mx-)E110,
 Harmony USA Model 18008-4
 Harmony USA Model 18020A
 Twister SFM336E
-
+US Robotics
 
 ADAPTABILITY - This distribution is complete with all the voice files and 
 to make a full functional IVRS you need a few line of perl scripts and 
