@@ -12,8 +12,11 @@ Revision history for Perl extension Ivrs.pm
         - All files in sfiles/ are now header less raw modem data (RockWell)
         - Use of pvftools avoided. However it is still required to convert
           new wav files to rmd files.
-        - Script wavtorock added for conversion of new wav file to Rockwell chip
-          set files. In future support for other chipset like USR, Motorola, 
-          Cirrus logic will be added.
+        - Script wavtorock added for conversion of new wav file to Rockwell 
+          chip set files. In future support for other chipset like USR, 
+          Motorola, Cirrus logic will be added.
         - Same module (IvrsWin32.pm) is being ported to Window/NT.
-        
+0.07 Mon Feb 26 
+	-List of supported modem included.
+	-Improved documentation. 
+       

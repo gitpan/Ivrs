@@ -1,11 +1,13 @@
-This is Inter Active Voice Response (IVRS), a  perl module for
-implementation of IVRS under Linux.
+This is a  perl module for implementation of IVRS under Linux.
 
-You require perl 5.001 or later to use this library
+You require perl 5.001 or later to use this module.
 
 Simply extract the files to a directory of your choice and run
 ./demo1 ttyS1 
+
 Where ttyS1 is serial/modem port.
+
+Or else,
 
 You can install the module by running these commands:
    perl Makefile.PL
@@ -13,14 +15,14 @@ You can install the module by running these commands:
    make test
    make install
 
-There are also some demo scripts.
+There are some demo scripts included.
 
 For fax mode install efax or copy efix and efax from bin/ to your /usr/bin.
 
 Please report any bugs/suggestions to Mukund Deshmukh
 <betacomp@nagpur.dot.net.in>
 
-All files contained in this installation are Copyright (c) 2000-2005
+All files contained in this distribution are Copyright (c) 2000-2005
 Mukund Deshmukh unless otherwise specified. All rights reserved.
 
 This Module is free software; you can redistribute it and/or modify it under 

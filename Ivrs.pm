@@ -1,4 +1,4 @@
-#Perl module to implement a full functional Inter Active Voice Response.
+#Perl module to implement a full functional Interactive Voice Response
 #System using standard voice modem. I have *taken* some codes from 
 #SerialPort.pm for serial port access, with due respect to Bill Birthisel.
 
@@ -52,7 +52,7 @@ use Carp;
 use strict;
 
 use vars qw($VERSION @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS);
-$VERSION = '0.06';
+$VERSION = '0.07';
 
 require Exporter;
 
@@ -111,7 +111,7 @@ my $vdir="sfiles";
 my $logfile="/var/log/Ivrs_Log";
 my $tmpmsg="/tmp/tmpmsg";
 my $rmdhdr="RMD1Rockwell".pack("C20",0,0,0,0,0,0,0,0,0,4,28,32,4,0,0,0,0,0,0,0);
-my $Babble = 0; #Set to 1 if you want lots of garbage in Log File.
+my $Babble = 1; #Set to 0 if you do not want lots of garbage in Log File.
 my $testactive = 0;	# test mode active
 my @Yes_resp = (
 		"YES", "Y",
@@ -708,7 +708,7 @@ sub pclose {
 #    exit 0;
 }
 
-##My routines starts from here, Not a very tight code, but it works!!
+#My routines starts from here, Not a very tight code, but it works!!
 #
 #---------------------------------------------------------------------#
 sub initmodem {
@@ -716,12 +716,9 @@ sub initmodem {
     $self->pulse_dtr_on(500)||return undef;
     $self->pulse_dtr_off(500)||return undef;
     $self->atcomm("ATZ","OK") ||return undef; 
-    $self->atcomm("AT*NC22","OK") ||return undef;
     $self->atcomm("AT&C1&D2&K3M2L3","OK")||return undef; 
-   # $self->atcomm("AT*NC22","OK")||return undef;
     $self->atcomm("AT#CLS=8","OK")||return undef;
     $self->atcomm("AT","OK")||return undef; 
-    $self->atcomm("ATS91=50","OK")||return undef;
     $self->atcomm("AT#VBS=4","OK")||return undef;
     $self->atcomm("AT#VSP=2","OK")||return undef;
     $self->atcomm("AT#VTD=3F,3F,3F","OK")||return undef; 
@@ -759,12 +756,12 @@ sub waitring {
     $self->atcomm("AT#VLS=0","OK")||return undef;
     $self->atcomm("AT#CLS=8","OK")||return undef;
     while (!($self->input=~/[RING]/)){}
-        $callid=$self->input;
-        $self->atcomm("ATA","")||return undef;
-        $self->atcomm("AT#VLS=0","VCON")||return undef;
-        $self->atcomm("AT#VTX","CONNECT")||return undef;
-        print LOG "Call from <$callid> received at ",`date`;
-        return $callid;
+    $callid=$self->input;
+    $self->atcomm("ATA","")||return undef;
+    $self->atcomm("AT#VLS=0","VCON")||return undef;
+    $self->atcomm("AT#VTX","CONNECT")||return undef;
+    print LOG "Call from <$callid> received at ",`date`;
+    return $callid;
 }
 
 sub dialout
@@ -1039,18 +1036,16 @@ $iv = new Ivrs($portname,$vdir);
 This module provides the complete interface to voice modem for Interactive
 Voice Response System (IVRS). The IVRS are widely used for telebanking,
 product inforamtion, tele marketing, voice mail, fax servers, and many more.
-All these can be implemented using this module and with very few lines of code.
-This module takes care of all the low level functions of serial port and
-modem. 
+All these can be implemented using this module and with very few lines of
+Perl code. This module takes care of all low level functions of serial port 
+and modem. 
 A log file defined by the $logfile="/var/log/Ivrs_Log.ttyS*" will be opened for
-logging IVRS activity. Also set $Babble =1 if you want to log all the
-messages.
-
+logging IVRS activity. Set $Babble =0 if you do not want to log all the
+messages (default is 1).
 
 =head1 EXAMPLE
 
-The demo files are short and with full of explanation, which should serve to 
-understanding of module.
+The demo files explains the working of various subroutines of the module.
 
 demo1 - A simple voice interaction.
 
@@ -1062,55 +1057,69 @@ demo3 - Fax server.
 
 $iv = new Ivrs('ttyS1',$vdir);
 
-The first variable is the mdoem/serial port.
+The first variable is the port name for modem and serial port (ttyS0 or ttyS1)
+  
+The second variable $vdir is voice file directory.
+You must specify $vdir if you want to use other than  default directory 
+( sfiles/ ). If you are running IVRS from /etc/inittab (YES!! you can do) 
+then absolute path for voice files will be rquired.
 
-You must specify $vdir if you want to use other directory than 
-default directory (namely sfiles/ ). If you are running IVRS from 
-/etc/inittab then absolute path will be rquired.
+=head2 Initilization.
 
 $iv->setport('38400','none','8','1','rts','8096');
 
 The serial port parameters are set here. These parameters are carefully
 worked out after extensive trials. Change these only if you know what are you
-doing.
+doing or if these settings do not work on your modem.
 
 $iv->initmodem;
 
 This will put the modem in voice mode. Number of AT commands are required to
-set this. Again do not change any thing here, unless you are sure.
+set this. You may comment out the AT commands which do not start with AT# if
+your modem fails to respond. Some modem uses AT+ for voice commands. 
+In that case you will have to replace all AT# with AT+.
 
 $cid=$iv->waitring;
 
 This will put the modem in answer mode and wait for the ring. When the ring
-comes, call will be received and Caller ID will be returned in $cid (not
-tested so far). If you want to play a message through Modem speaker then
-skip it and put $iv->atcomm("AT#VTX","CONNECT");
+comes, call will be received on the first ring and Caller ID will be returned 
+in $cid (not tested so far). 
+
+If you want to play a message directly (without some one calling) through 
+Modem speaker then skip it and put 
+$iv->atcomm("AT#VTX","CONNECT"); 
 but then you will not be able to punch DTMF codes. 
+
+=head2 Play messages.
 
 $iv->playfile("$msgfile","$dtmf")
 
 This requires a bit of explanation.
 From version 0.06, the use of lin file is removed and all files are raw modem
 data (Rockwell Modem, 7200 samples per second with compression Type 4)
-type, So pvftools are no longer required to run the IVRS.
+type only, So pvftools are no longer required to run the IVRS.
 
-You can specify the full path of the file with / or only file 
-name from voice file directory as specified in $vdir. If no file name is 
-specified, it will play special file contained in $tmpmsg. We will discuss this 
-file in next section.
+The $msgfile contains the message file to be played.
+You can specify the full path of the file like,
+/home/Ivrs-0.07/sfiles/greet  
+or only file name (like greet) from voice file directory. If no file name 
+is specified, it will play special file contained in $tmpmsg. I will discuss 
+this file in next section.
 
-Another variable required is $dtmf. 
+Another variable required is $dtmf, which is number of dtmf codes to be 
+accpeted from the user while playing the file. 
 
-If $dtmf=0 then playing of file will not be stopped even if caller presses any key.
+If $dtmf=0 then playing of file will not be stopped even if caller presses 
+any key.
 
-If $dtmf=1, then the specified file will played and if caller presses any key
-then playing will be immidiately stopped and $iv->playfile will return the 
-digit pressed.
+If $dtmf=1, then playing of file will be immidiately stopped if the caller
+presses first dtmf code and $iv->playfile will return the digit pressed.
 
 If $dtmf=2 or more, then playing of specified file will be stopped when caller
-presses first digit and next a silence (tsil15) of 15 seconds will played for 
+presses first digit and next a silence (tsil15) of 15 seconds will played, for 
 caller to enter remaining digits. When caller has pressed required number of 
-digits ($dtmf) then $iv->playfile will return with complete dtmf digits.
+digits ($dtmf) then playing will be stopped and $iv->playfile will return with
+complete dtmf digits.
 
 $iv->addmsg($msg)
 
@@ -1122,16 +1131,16 @@ $iv->addtxt("ABCDEF")
 
 $iv->addate("20001212")
 
-IVRS requires messages to generated on fly and then played to
-caller, like number in numerical format. The default voice directory sfiles/ 
-has rmd files with 32 bytes of header striped. These header less files
-can be cut and pasted as required. The rmd file header ( $rmdhdr ) is
-added to it before playing these file in $iv-playfile.  The above 
-mentioned routines adds up various rmd files to a file specified by $tmpmsg, 
-and finally this file along with header played to caller. I have included a
-small script wavtorock for converting wav files to rmd (only for RockWell
-chip set modem) file with striped header. I will add further support for
-other modem in future.
+IVRS requires many messages to generated on the fly and then played to
+caller, like numbers in numerical format, date etc. The default voice 
+directory sfiles/ has number of rmd files with 32 bytes of header striped.
+These header less files can be cut and pasted as required. The rmd file 
+header ( $rmdhdr ) is added to it before playing these file in $iv-playfile.
+The above mentioned routines adds up various rmd files to a file specified 
+by $tmpmsg, and finally this file along with header is played to caller. 
+For example to play number 123 to caller, files (from sfiles/) '1','hundred',
+'20' and '3' will be added to $tmpmsg, and then played. 
+
 
 $iv->addmsg($msg)
 
@@ -1143,7 +1152,7 @@ Add a numeric value in Indian format (using lacs and crore)
 
 $iv->addmil($val)
 
-Same as above but with Internation format (using milions and billions)
+Same as above but with International format (using milions and billions)
 
 $iv->addtxt("ABCDEF")
 
@@ -1153,33 +1162,42 @@ $iv->addate("20001212")
 
 Add date in yyyymmdd format.
 
+=head2 Record Messages.
+
 $iv->recfile($filename,$duration)
 
-This will record the file $filename in rmd file format with proper header
+This will record the file $filename in rmd format with proper header
 for a period of $duration seconds. This rmd file can be converted to any
 format using pvftools.
 
+=head2 Other Functions.
+
 $iv->dialout
-For dialing out a number - NOT IMPLEMETED YET.
+
+For dialing out a number - NOT IMPLEMENTED YET.
+
 
 $iv->callxfer
-For tranfering a call    - NOT IMPLEMETED YET.
+
+For transfering the call to another extension - NOT IMPLEMENTED YET.
+
 
 $iv->faxmode
+
 This will put the modem in fax mode and you can run efix and efax to send
-the fax. This should be last instruction to IVRS. Also install efax or copy
-these files from bin/ directory to your /usr/bin.
+the fax. This should be last instruction in your script. Also install 
+efax or copy these files from bin/ directory to your /usr/bin.
+
+=head2 Close.
 
 $iv->closep
 
 This will do some cleanup, hangup the line and reset the modem.
 
-The demo files demo1 demo2 and demo3 are good examples for implementation 
-of IVRS. I will add some more demo files in future release if any.
 
 =head1 THANKS
 
-I must thank Bill Birthisel, wcbirthisel@alum.mit.edu, for serial port code
+I thank Bill Birthisel, wcbirthisel@alum.mit.edu, for serial port code
 taken from SerialPort.pm,
 
 =head1 COPYRIGHT
