@@ -18,6 +18,14 @@ You can install the module by running these commands:
 
 There are some demo scripts included.
 
+Many people have reported that they get "disabling ioctl methods - constant
+not found". This is due to missing perl header files. Copy these files from
+perlheader/asm to /usr/lib/perl/<perl version>/asm/. Your destination
+may change but, this directory is top level directory of perl distribution.
+
+If your modem fails to respond to AT# commands, then replace AT# with AT+ at
+all places in Ivrs.pm.
+
 For fax install efax or copy efix and efax from bin/ to your /usr/bin.
 
 For converting your recorded wav files, install mgetty-voice for pvftools

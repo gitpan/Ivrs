@@ -113,7 +113,7 @@ my $tmpmsg="/tmp/tmpmsg";
 
 
 #These headers are required for recorded files only.
-my $rmdhdr="";
+#my $rmdhdr="";
 # For Rockwell chip set modem
 my $rmdhdr="RMD1Rockwell".pack("C20",0,0,0,0,0,0,0,0,0,4,28,32,4,0,0,0,0,0,0,0);
 # For US Robotics modem
@@ -861,6 +861,7 @@ sub playfile {
     my $self=shift;
     my $pfile=shift;
     my $playfile="";
+    $pfile="" if !($pfile);
     $playfile=$pfile;
     $playfile="$vdir/$pfile" if (substr($pfile,0,1) ne "/");
     $playfile=$tmpmsg if ($pfile eq "");
@@ -876,7 +877,9 @@ sub playfile {
     my $tmp;
     my $dtcount =0;
     open (FH1,$playfile);
-    while (!eof(FH1)) {
+    $self->write($rmdhdr); 
+    $self->write_drain;
+	while (!eof(FH1)) {
         read FH1,$tmp,1000;
         $self->write($tmp);
         $self->write_drain;

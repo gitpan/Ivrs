@@ -34,7 +34,7 @@ print "Waiting for the ring.....\n";
 $cid=$iv->waitring;
 print "Call received from $cid \n";
 
-#'pick up the receiver' when a call comes and plays the instruction to start 
+#The modem will 'pick up the receiver' when a call comes and plays the instruction to start 
 #fax machine.
 $iv->playfile("faxst")||&closeall;
 

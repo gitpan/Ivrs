@@ -29,5 +29,8 @@ Revision history for Perl extension Ivrs.pm
 	- Dial out code is improved.
 	- Additional DTMF like * and # are used get the variable length DTMF
         - codes.
+	- Required perl header files included in perlheader/asm. Copy these
+          files to top level directory of perl distribution /usr/lib/perl/<perl
+	  version>/asm/ ,if you get "disabling ioctl methods - ..." error.
 
  	      

@@ -33,8 +33,9 @@ $iv->initmodem||die"Modem failed";
 #put the modem in answer mode $cid will have the caller ID
 print "Waiting for the ring.....\n";
 $cid=$iv->waitring;
+print "Call received from $cid\n";
 
-#'picks up the receiver' when a call comes and play a message prompt 
+#The modem picks up the receiver' when a call comes and play a message prompt 
 #the caller for recording of message.
 $iv->playfile("recmail",0)||&closeall;
 
@@ -45,7 +46,7 @@ $iv->recfile("/tmp/inmsg",10)||&closeall;
 $iv->playfile("beep500")||&closeall;
 
 #play the recorded message.
-$iv->playfile("/tmp/inmsg")||&closeall;
+$iv->playfile("/tmp/inmsg",1)||&closeall;
 
 #close the port and say thank you.
 sleep 2;

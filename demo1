@@ -33,7 +33,7 @@ $iv->initmodem||die"Modem failed\n";
 #You may test your voice files (through modem speaker, but not a very good
 #idea!!) without actually connecting from the
 #telephone. Just change $cid=$iv->waitring to $iv->atcomm("AT#VTX","CONNECT")
-#But then you will have enter dtmf code from the telephone connected to modem.
+#But then you will have to enter dtmf code from the telephone connected to modem.
 
 print "Waiting for the ring.....\n";
 $cid=$iv->waitring; 
@@ -41,7 +41,7 @@ print "Call received from $cid \n";
 
 #pick up the receiver when a call come and play the greeting message.
 #and collect 4 digits of dtmf code, returned in $accno. The caller can enter
-fewer than 4 DTMF code by terminating with * or #,
+#fewer than 4 DTMF code by terminating with * or #,
 
 $accno=$iv->playfile("bgreet","4")||&closeall;
 
@@ -52,12 +52,11 @@ print "The caller has punched $accno dtmf codes \n";
 $iv->addval($accno);
 $iv->addmsg("sory");
 $iv->addmsg("waccno");
-$iv->addmil("1123456");
 $iv->addate("12122000");
 $iv->addtxt("ABCEFGH");
 
 #play the final file and accept one DTMF just to stop the playing of message. 
-$iv->playfile("","1")||&closeall;
+$iv->playfile("",1)||&closeall;
 sleep 1;
 #close the port 
 $iv->addmsg("thank");

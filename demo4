@@ -37,7 +37,7 @@ $iv->initmodem||die"Modem failed\n";
 
 print "Dialing ... the number 22\n";
 #$iv->dialout("61,9422113746");
-#dial a number 22 and wait for 30 seconds to pick up.
+#dial a number and wait for 30 seconds to pick up.
 $iv->dialout("22","30")||&closeall;
 
 print "Call picked up, playing the message\n";

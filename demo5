@@ -44,11 +44,12 @@ $cid=$iv->waitring; #choose this one
 print "Call received from $cid \n";
 
 #pick up the receiver when a call come and play the greeting message.
-#and collect 4 digits of dtmf code, returned in $accno
+#and collect 4 digits of dtmf code, returned in $accno, and transfer the
+#call to $accno
 $accno=$iv->playfile("bgreet","4")||&closeall;
 
 print "The caller has punched $accno dtmf codes \n";
-$iv->callxfer("21");
+$iv->callxfer($accno);
 &closeall;
 exit 1;
 
