@@ -3,18 +3,19 @@ implementation of IVRS under Linux.
 
 You require perl 5.001 or later to use this library
 
-You install the module by running these commands:
+Simply extract the files to a directory of your choice and run
+./demo1 ttyS1 
+Where ttyS1 is serial/modem port.
 
+You can install the module by running these commands:
    perl Makefile.PL
    make
    make test
    make install
 
 There are also some demo scripts.
-If you want to run from /etc/inittab or other directory then you need to
-modify file locations in Ivrs.pm. I have avoided copying of some binaries to
-/usr/bin
 
+For fax mode install efax or copy efix and efax from bin/ to your /usr/bin.
 
 Please report any bugs/suggestions to Mukund Deshmukh
 <betacomp@nagpur.dot.net.in>
@@ -24,6 +25,7 @@ Mukund Deshmukh unless otherwise specified. All rights reserved.
 
 This Module is free software; you can redistribute it and/or modify it under 
 the same terms as Perl itself.
+
 
 
 

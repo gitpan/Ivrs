@@ -1,6 +1,6 @@
-Revision history for Perl extension Ivrs.
+Revision history for Perl extension Ivrs.pm
 0.01  Sat Jan 03 11:32:59 2001
-        - First release under GPL with SerialPort.pm 
+        - First release under with SerialPort.pm 
 
 0.03  Sat Jan 27 11:32:59 2001
 	- part of SerialPort.pm merged with Ivrs.pm
@@ -8,3 +8,12 @@ Revision history for Perl extension Ivrs.
 0.04  Thu Feb 8 15:21:29 2001
         - Some bugs were corrected, Added Documentation, 
 
+0.06  Thu Feb 17 11:31:00 2001
+        - All files in sfiles/ are now header less raw modem data (RockWell)
+        - Use of pvftools avoided. However it is still required to convert
+          new wav files to rmd files.
+        - Script wavtorock added for conversion of new wav file to Rockwell chip
+          set files. In future support for other chipset like USR, Motorola, 
+          Cirrus logic will be added.
+        - Same module (IvrsWin32.pm) is being ported to Window/NT.
+        

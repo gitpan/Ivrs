@@ -1,8 +1,8 @@
 #!/usr/bin/perl
 #This is simple demo script showing some basic operations. 
 #It initializes the serial port,
-#Waits for ring on the modem, when a call comes, plays the file bgreet,
-#takes the dtmf code from the caller and finally says sorry and plays , 
+#Waits for ring on the modem, when a call comes, play the file bgreet,
+#takes the dtmf code from the caller and finally says sorry and play , 
 #the dtmf code received in numeriacal format, date, and some text.
 
 require 5.000;
@@ -14,12 +14,11 @@ die "\n usage: $0 ttyS0 or ttyS1\n\n" if ($portname eq "");
 
 #Set the voice file directory. The absolute path is required if you want to
 #run the IVRS from the inittab or any other directory. The defaults are 
-#'sfile' and 'bin' in the current directory.
+#'sfile'  in the current directory.
 $vdir="sfiles";
-$bindir="bin";
 
 #initialize the serial port
-$iv = new Ivrs($portname,$vdir,$bindir);
+$iv = new Ivrs($portname,$vdir,'1');
 print "Serial port and Modem initialized\n";
 
 #set the serial port parameters only if you are sure.
@@ -29,39 +28,43 @@ $iv->setport("38400","none","8","1","rts","8096")||die"Setting Failed\n";
 $iv->initmodem||die"Modem failed\n";
 
 #put the modem in answer mode, $cid will have the caller ID
-$cid=$iv->waitring;
-print "Call received from $cid \n";
+#You may test your voice files (through modem speaker, but not a very good
+#idea!!) without actually connecting from the
+#telephone. Just change $cid=$iv->waitring to $iv->atcomm("AT#VTX","CONNECT")
+#But then you will have enter dtmf code from the telephone connected to modem.
 
+print "Waiting for the ring.....\n";
+$cid=$iv->waitring; #choose this one 
+#$iv->atcomm("AT#VTX","CONNECT"); #OR this one AND Not the both.
+print "Call received from $cid \n";
 
 #pick up the receiver when a call come and play the greeting message.
 #and collect 4 digits of dtmf code, returned in $accno
 $accno=$iv->playfile("bgreet","4")||&closeall;
-$iv->playfile||&closeall;
 
 print "The caller has punched $accno dtmf codes \n";
 
 #add file sory and waccno to say "Sorry" and "Wrong account Number"
 #along with received number to a file (set in Ivrs.pm as $tmpmsg) 
-$iv->addval($accno."1234");
+$iv->addval($accno);
 $iv->addmsg("sory");
-$iv->addmil("9123456");
 $iv->addmsg("waccno");
+$iv->addmil("1123456");
 $iv->addate("12122000");
-$iv->addtxt("ABCDE");
+$iv->addtxt("ABCEFGH");
 
 #play the final file and accept one DTMF just to stop the playing of message. 
-$iv->playfile("",1)||&closeall;
+$iv->playfile("","1")||&closeall;
 
-#close the port and say thank you.
+#close the port 
 $iv->addmsg("thank");
 $iv->playfile||&closeall;
 &closeall;
 exit 1;
 
-#This routine is excecuted if there is any error in handling the modem
-#command.
 sub closeall
 {
+sleep 2;
 $iv->closep;
 exit 1;
 }

@@ -3,7 +3,7 @@
 #This is simple demo script showing some basic operations. 
 #It initializes the serial port,
 #Waits for ring on the modem, when a call comes, it records the caller message
-#and plays the same message to caller
+#and play the same message to caller
 
 require 5.000;
 use Ivrs;
@@ -13,14 +13,12 @@ $portname=$ARGV[0];
 die "\n usage: $0 ttyS0 or ttyS1\n\n" if ($portname eq "");
 
 #Set the voice file directory. The absolute path is required if you want to
-#run the IVRS from the inittab. The defaults are 'sfile' and 'bin' from the
+#run the IVRS from the inittab. The defaults is 'sfile' from the
 #current directory.
 $vdir="sfiles";
-$bindir="bin";
-
 
 #initialize the serial port
-$iv = new Ivrs($portname,$vdir,$bindir);
+$iv = new Ivrs($portname,$vdir);
 print "Serial port and Modem initialized\n";
 
 #set the serial port parameters if you are sure.
@@ -30,9 +28,10 @@ $iv->setport("38400","none","8","1","rts","1024")||die"Setting Failed\n";
 $iv->initmodem||die"Modem failed";
 
 #put the modem in answer mode $cid will have the caller ID
+print "Waiting for the ring.....\n";
 $cid=$iv->waitring;
 
-#'picks up the receiver' when a call comes and plays a message prompt 
+#'picks up the receiver' when a call comes and play a message prompt 
 #the caller for recording of message.
 $iv->playfile("recmail",0)||&closeall;
 

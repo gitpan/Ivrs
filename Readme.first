@@ -1,0 +1,94 @@
+              INTERACIVE VOICE RESPONSE SYSTEM 
+INTRODUCTION- IVRS is relatively new technology aimed to integrate computer 
+and telephony. We find number IVR system in daily walk of life giving various 
+types information to caller like Tele banking, product information, fax 
+servers, call centers, and others. All these can be implemented using this 
+module under linux. Newer linux kernel had computer telephony support but 
+that was restricted to specific hardware and not the Voice modem. Vgetty,
+which is voice version of getty,  is around for many years, but I found Vgetty 
+not very suitable for IVRS due to it's slow responses, and lack of proper 
+documentation. This modules is based on  perl and voice modem and does not 
+require any other special cards, not even sound card. I have tested it on 
+Red Hat 6.1 and debian 2.1, but I see no reason why it should not work on 
+other Linux distribution. As regard capability of this module, it can play 
+message (up to 11025 byes/sec), get Caller ID, send /receive Fax, record 
+Message, dial out side number, generate fast response (no need to wait for 
+message to complete), interface with data base,  and in short almost every 
+thing that  a commercial IVRS can do. The only limitation which I fore see 
+compared to other IVRS using Dialogic card is the number of telephone line 
+that can be supported on one machine.  I have tested this IVRS on two modem 
+and it rocks, which hopefully should hold good for 4 modem (with extra serial 
+port card) as well. 
+
+MODEM -  The use of standard voice modem (33.6kbps and above ) obviates the 
+need for additional hardware for IVRS. The modem has a micro controller and 
+a data pump (analog to digital to analogue converter). These two makes a 
+beautiful voice /fax/ data interface to telephone line which can play voice 
+files up sampling rate of 11025 bytes/sec (most commercial card allow up to 
+8000 byts/sec only). Beside this you can divert your voice signal to/from
+internal speaker and microphone, and add external speaker and microphone.  
+The PC  communicates to Modem via serial port and AT commands. The complete 
+AT command set contains more than 100 commands and available on net. The new 
+voice modem has ability to read the CallerID information, receive/send fax, 
+dial another number, line quality diagnosis etc.  Due to use of modem, this 
+IVRS is limited to two channel (or Telephone lines), because PC has only two 
+serial ports. Multi port serial card can be installed but I have not tested 
+it. In my opinion this not a limitations as one modem can cater to almost 
+3000 user. I have seen other IVRS which uses Dialogic Cards, these cards are 
+nothing but the multiple modem (2, 4, 8, 16 ) on ISA or PCI cards. As these 
+card communicates with PC via ISA or PCI slot,  the data transfer speed is 
+very high and hence PC can cater to multiple modem (8 or 16) at a time.  
+How ever cost of these card is prohibitive and around Rs.35,000  for a two 
+channel card. (when last I checked). 
+
+VOICE FILES - There is lot of reading material for sound file on the net. I 
+will restrict this discussion to IVRS only. The modem understands only rmd 
+(raw modem data)  files. The pvftools (Portable Voice Format Tools)  which is 
+included with Vgetty has excellent utilities to convert files from one 
+format to another format. From version 0.6 I have used raw modem data type
+(or rmd type). These files in sfiles/ directory are rmd files converted from
+wave format using pvftools. The headers of these files are removed so that
+these can be pasted. In IVRS number of messages are generated depending on
+user input. The rmd files of sfiles/ can be cut or joined to create a new
+message. For example to announce a number 123 to caller, files 1,hundred,
+20,3 will be added and then played to caller. I have used and included some  
+pvftools with this distribution. 
+
+The voice files with this distribution are customized for Rockwell chip set 
+modem, which is most popular. The pvftools supports other modem type also
+and files for the other format can be created using wavtorock script
+included with this distribution. I have tested  Dlink, GVC, LanBit and 
+many other modem. The modem speed does not matter because voice modem 
+with 33.6 Kbps and above will work fine. 
+
+ADAPTABILITY - This distribution is complete with all the voice files and to
+make a full functional IVRS you need a few line of perl scripts and additional
+message files. You may  need to record messages,  if you want additional 
+messages or if you do not like the tone of these files,  and cut them in to 
+separate file. These messages can be recorded in wav format then converted to 
+rmd format. You also need to write small scripts to fetch the numerical data 
+from data files for playing to caller. The demo scripts included in this 
+distribution gives fair knowledge of module. 
+
+REPORTS - Please send the bug report / suggestions to me, so that those can
+be incorporated in next version. I also would like to know type and make of
+Modem on which it is tested so that I can include list of tested Modems. I
+am planning to port this module to NT also provided I get sufficient feed
+back. 
+
+
+Copyright (C) 2001, Mukund Deshmukh. All rights reserved. This program is 
+free software,  you can redistribute it and/or modify it under the same 
+terms as Perl itself. 
+
+Author: 
+Mukund Deshmukh 
+M/s.Beta Computronics Pvt. Ltd. 
+45, Gopal Nagar, Opp. SBI Colony, 
+Nagpur - 440022, India. 
+Tel  91-712-227125, 240122 
+email betacomp@nagpur.dot.net.in 
+web site www.betacomp.com 
+  
+
+

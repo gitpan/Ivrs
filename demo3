@@ -15,7 +15,6 @@ die "\n usage: $0 ttyS0 or ttyS1\n\n" if ($portname eq "");
 #run the IVRS from the inittab. The defaults are 'sfile' and 'bin' from the
 #current directory.
 $vdir="sfiles";
-$bindir="bin";
 
 #initialize the serial port
 $iv = new Ivrs($portname,$vdir,$bindir);
@@ -28,10 +27,11 @@ $iv->setport("38400","none","8","1","rts","8096")||die"Setting Failed\n";
 $iv->initmodem||die"Modem failed\n";
 
 #put the modem in answer mode $cid will have the caller ID
+print "Waiting for the ring.....\n";
 $cid=$iv->waitring;
 print "Call received from $cid \n";
 
-#'pick up the receiver' when a call comes and plays the instruction to strat 
+#'pick up the receiver' when a call comes and plays the instruction to start 
 #fax machine.
 $iv->playfile("faxst")||&closeall;
 
@@ -41,7 +41,8 @@ sleep 1;
 
 #send fax using efix and efax. The modem and IVRS (at present) can not
 #recover from fax mode, so this must be last message and close down is 
-#required. Uncomment  following line if you do want messages from efax and efix.
+#required. Ensure that efax and efix are in your path.
+#Uncomment  following line if you do want messages from efax and efix.
 #open (STDOUT,">>/dev/null");
 #open (STDERR,">>/dev/null");
 

@@ -1,7 +1,6 @@
-#Perl module to implement a full functional Inter Active Voice Response
+#Perl module to implement a full functional Inter Active Voice Response.
 #System using standard voice modem. I have *taken* some codes from 
-#SerialPort.pm for serial port
-#access, with due respect to Bill Birthisel.
+#SerialPort.pm for serial port access, with due respect to Bill Birthisel.
 
 package SerialJunk;
 # this is the linux path. Need to determine location on other OSs
@@ -53,7 +52,7 @@ use Carp;
 use strict;
 
 use vars qw($VERSION @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS);
-$VERSION = '0.03';
+$VERSION = '0.06';
 
 require Exporter;
 
@@ -106,15 +105,13 @@ my %c_cc_fields = (
 		   VMIN     => &POSIX::VMIN,
 		   VTIME    => &POSIX::VTIME,
 		   );
-# Set your directories, tmp files and log files here. You need absolute path 
-#for all the directory and files if you are running IVRS from the different 
-#directory or vis /etc/inittab
+#Default directories and filenames. You may specify $vdir from your
+#programme
 my $vdir="sfiles";
-my $bindir="bin";
-my $logfile="/var/log/ivrs";
-my $tmpmsg="/tmp/ivrstmp.1";
-
-my $Babble = 0;
+my $logfile="/var/log/Ivrs_Log";
+my $tmpmsg="/tmp/tmpmsg";
+my $rmdhdr="RMD1Rockwell".pack("C20",0,0,0,0,0,0,0,0,0,4,28,32,4,0,0,0,0,0,0,0);
+my $Babble = 0; #Set to 1 if you want lots of garbage in Log File.
 my $testactive = 0;	# test mode active
 my @Yes_resp = (
 		"YES", "Y",
@@ -153,8 +150,6 @@ sub new {
     $self->{NAME}="/dev/".$self->{NAME} ;
     my $tmpdir=shift;
     $vdir=$tmpdir if $tmpdir ne "";
-    $tmpdir=shift;
-    $bindir=$tmpdir if $tmpdir ne "";
     my $quiet = shift;
     unless ($quiet or ($bitset && $bitclear && $rtsout && $dtrout) ) {
        nocarp or warn "disabling ioctl methods - constants not found\n";
@@ -254,36 +249,6 @@ sub new {
     &write_settings($self);
 
     $self->{ALIAS} = $self->{NAME};	# so "\\.\+++" can be changed
-##    print "opening $self->{NAME}\n"; ## DEBUG ##
-
-    # "private" data
-#    $self->{"_DEBUG"}    	= 0;
-#    $self->{U_MSG}     		= 0;
-#    $self->{E_MSG}     		= 0;
-#    $self->{RCONST}   		= 0;
-#    $self->{RTOT}   		= 0;
-#    $self->{"_T_INPUT"}		= "";
-#    $self->{"_LOOK"}		= "";
-#    $self->{"_LASTLOOK"}	= "";
-#    $self->{"_LASTLINE"}	= "";
-#    $self->{"_CLASTLINE"}	= "";
-#    $self->{"_SIZE"}		= 1;
-#    $self->{OFS}		= "";
-#    $self->{ORS}		= "";
-#    $self->{"_LMATCH"}		= "";
-#    $self->{"_LPATT"}		= "";
-#    $self->{"_PROMPT"}		= "";
-#    $self->{"_MATCH"}		= [];
-#    $self->{"_CMATCH"}		= [];
-#    @{ $self->{"_MATCH"} }	= "\n";
-#    @{ $self->{"_CMATCH"} }	= "\n";
-#    $self->{DVTYPE}		= "none";
-#    $self->{HNAME}		= "localhost";
-#    $self->{HADDR}		= 0;
-#    $self->{DATYPE}		= "raw";
-#    $self->{CFG_1}		= "none";
-#    $self->{CFG_2}		= "none";
-#    $self->{CFG_3}		= "none";
     print LOG "Port $self->{NAME} opened by IVRS\n";
     bless ($self, $class);
     return $self;
@@ -308,7 +273,7 @@ sub write_settings {
     $self->{TERMIOS}->setattr($self->{FD}, &POSIX::TCSANOW);
 
     if ($Babble) {
-        print "writing settings to $self->{ALIAS}\n";
+#        print "writing settings to $self->{ALIAS}\n";
     }
     1;
 }
@@ -743,15 +708,17 @@ sub pclose {
 #    exit 0;
 }
 
-##My routines starts from here
+##My routines starts from here, Not a very tight code, but it works!!
+#
 #---------------------------------------------------------------------#
 sub initmodem {
     my $self=shift;
     $self->pulse_dtr_on(500)||return undef;
     $self->pulse_dtr_off(500)||return undef;
     $self->atcomm("ATZ","OK") ||return undef; 
-    $self->atcomm("AT&F1","OK") ||return undef;
+    $self->atcomm("AT*NC22","OK") ||return undef;
     $self->atcomm("AT&C1&D2&K3M2L3","OK")||return undef; 
+   # $self->atcomm("AT*NC22","OK")||return undef;
     $self->atcomm("AT#CLS=8","OK")||return undef;
     $self->atcomm("AT","OK")||return undef; 
     $self->atcomm("ATS91=50","OK")||return undef;
@@ -762,7 +729,7 @@ sub initmodem {
     $self->atcomm("AT#VSD=1","OK")||return undef; 
     $self->atcomm("AT#BDR=16","OK")||return undef;
     $self->atcomm("AT#VLS=2","VCON")||return undef;
-    #$self->atcomm("ATL3","OK")||return undef;
+    $self->atcomm("ATL3","OK")||return undef;
     unlink("$tmpmsg");
     print LOG "Port Configured for Voice \n";
 }
@@ -781,7 +748,7 @@ sub setport {
     $self->handshake($hand)||return undef;
     $self->buffers($buff,$buff)||return undef;
     $self->write_settings;
-    print LOG "Port Configuration changed\n"||die "failed write";
+    print LOG "Port Configuration changed\n";
     return 1;
 }
 		
@@ -798,6 +765,16 @@ sub waitring {
         $self->atcomm("AT#VTX","CONNECT")||return undef;
         print LOG "Call from <$callid> received at ",`date`;
         return $callid;
+}
+
+sub dialout
+{
+#NOT YET IMPLEMENTED
+}
+
+sub callxfer
+{
+#NOT YET IMPLEMENTED
 }
 
 sub atcomm {
@@ -817,7 +794,7 @@ sub atcomm {
         }
     }
     #return $getstr;
-#    print "$atstr -> $getstr\n";
+    print LOG "Modem->$getstr" if $Babble;
     return 1;
 }
 
@@ -826,14 +803,21 @@ sub faxmode {
     $self->atcomm("\020\003\020\003","VCON");
     $self->atcomm("AT#BDR=0","OK");
     $self->atcomm("AT#CLS=2","OK");
+    print LOG "Fax mode set \n" if $Babble;
 }
 
 sub playfile {
     my $self=shift;
-    my $playfile=shift;
-    $playfile=$tmpmsg if $playfile eq "";
-    if (substr($playfile,0,1) ne "/") {$playfile="$vdir/$playfile";}
-    if (!(-e $playfile)) {print LOG "File $playfile not found\n";return undef;}
+    my $pfile=shift;
+    my $playfile="";
+    $playfile=$pfile;
+    $playfile="$vdir/$pfile" if (substr($pfile,0,1) ne "/");
+    $playfile=$tmpmsg if ($pfile eq "");
+    if (!(-e $playfile)) {
+        print LOG "play->File $playfile not found\n";
+        return undef;
+    }
+    print LOG "play->The play file is $playfile \n" if $Babble;
     my $ndtmf=shift;
     $ndtmf=0 if !($ndtmf);
     my $rdtmf="";
@@ -841,44 +825,39 @@ sub playfile {
     my $tmp;
     my $dtcount =0;
     open (FH1,$playfile);
-    read FH1,$tmp,4;
-    if ($tmp ne "RMD1") {
-        close FH1;
-        system "$bindir/lintopvf -s 7200 $playfile $tmpmsg.1";
-        system "$bindir/pvftormd Rockwell 4 $tmpmsg.1 $tmpmsg.2";
-        open (FH1,"$tmpmsg.2");
-    }
+    $self->write($rmdhdr);
+    $self->write_drain;
     while (!eof(FH1)) {
         read FH1,$tmp,1000;
-        $tmp=$self->rmdle($tmp);
         $self->write($tmp);
         $self->write_drain;
         $dtmf=$self->input; 
         last if ($dtmf=~/[0-9]/) && ($ndtmf !=0);
         if ($dtmf=~/[b]/) {
-            print LOG "User hanged up before call was finished\n";
+            print LOG "Call->User hanged up before call was finished\n";
             return undef;
         }
     }
-    unlink("$tmpmsg");
-    system "touch $tmpmsg";
+    unlink("$tmpmsg") if $playfile=="$tmpmsg";
     if ($ndtmf == 0) {
         return 1;
     }
     if ($ndtmf==1) {
-        return join('', split(/\W/,$dtmf));
+    return join('', split(/\W/,$dtmf))  if $dtmf;
+    return 1;
     } 
     $rdtmf=$dtmf;
     open (FH1,"$vdir/tsil15");
+    $self->write($rmdhdr);
+    $self->write_drain;
     while (!eof(FH1)) {
         read FH1,$tmp,1000;
-        $tmp=$self->rmdle($tmp);
         $self->write($tmp);
         $self->write_drain;
         $dtmf=$self->input; 
         $rdtmf=$rdtmf.$dtmf if ($dtmf=~/[0-9]/);
         if ($dtmf=~/[b]/) {
-            print LOG "User hanged up before call was finished\n";
+            print LOG "Call->User hanged up before call was finished\n";
             return undef;
         }
         last if (length($rdtmf)==$ndtmf*2);
@@ -894,16 +873,14 @@ sub recfile {
     $self->atcomm("\020\003\020\003","VCON");
     $self->atcomm("AT#VRX","CONNECT")||return undef;
     open (FH1,">$recfile");
-    print FH1 "RMD1Rockwell";
-    my $rmdstr=pack("C20",0,0,0,0,0,0,0,0,0,4,28,32,4,0,0,0,0,0,0,0);
-    print FH1 $rmdstr;
+    print FH1 $rmdhdr;
     my $otimer=time;
     while ((time-$otimer)<$ttime) {
         print FH1 $self->input;
     }
     close FH1;
     if ($self->input=~/[b]/) {
-        print LOG "User hanged up before call was finished\n";
+        print LOG "Call->User hanged up before call was finished\n";
         return undef;
     }
     print LOG "Message file $recfile recorded\n";
@@ -915,7 +892,17 @@ sub recfile {
 sub addmsg {
     my $self=shift;
     my $playfile=shift;
-    system "cat $vdir/$playfile >> $tmpmsg";
+    my $self=shift;
+    my $tmp="";
+    open (FHO, ">>$tmpmsg");
+    open (FHI, "<$vdir/$playfile");
+    while (!eof(FHI)) {
+        read FHI,$tmp,1000;
+        print FHO $tmp;
+    }
+    close (FHI);
+    close (FHO);
+    print LOG "Msg->$playfile added\n" if $Babble;
 }
 
 sub addval {
@@ -931,7 +918,8 @@ sub addval {
     $num2=substr($num1,4,2);
     $self->addint1($num2,"thousand");
     $num2=substr($num1,6,1);
-    system "cat $vdir/$num2 $vdir/hundred >> $tmpmsg" if ($num2 != 0);
+    $self->addmsg($num2) if ($num2 != 0);
+    $self->addmsg("hundred") if ($num2 != 0);
     $num2=substr($num1,7,2);
     $self->addint1($num2,"sil0");
     return ;
@@ -944,15 +932,15 @@ sub addint1 {
     my $num3;
     if (($num2<21)&&($num2>0)) {
         $num2=int($num2);
-        system "cat $vdir/$num2 >> $tmpmsg";
+        $self->addmsg($num2);
     }
     if ($num2>20) {
         $num3=10*substr($num2,0,1);
-        system "cat $vdir/$num3 >> $tmpmsg";
+        $self->addmsg($num3);
         $num3=substr($num2,1,1);
-        system "cat $vdir/$num3 >> $tmpmsg";
+        $self->addmsg($num3);
     }
-    system "cat $vdir/$unit >> $tmpmsg" if ($num2 != 0);
+    $self->addmsg($unit) if ($num2 != 0);
     return;
 }
 
@@ -977,19 +965,20 @@ sub addint2 {
     my $unit=shift;
     my $num3=0;
     $num3=substr($num2,0,1);
-    system "cat $vdir/$num3 $vdir/hundred >> $tmpmsg" if ($num3 != 0);
+    $self->addmsg($num3) if ($num3 != 0);
+    $self->addmsg("hundred") if ($num3 != 0);
     $num2=substr($num2,1,2);
     if (($num2<21)&&($num2>0)) {
         $num2=int($num2);
-        system "cat $vdir/$num2 >> $tmpmsg";
+        $self->addmsg($num2);        
     }
     if ($num2>20) {
         $num3=10*substr($num2,0,1);
-        system "cat $vdir/$num3 >> $tmpmsg";
+        $self->addmsg($num3);        
         $num3=substr($num2,1,1);
-        system "cat $vdir/$num3 >> $tmpmsg";
+        $self->addmsg($num3);        
     }
-    system "cat $vdir/$unit >> $tmpmsg" if ($num2 != 0);
+    $self->addmsg($unit) if ($num2 != 0);    
     return;
 }
 
@@ -1000,7 +989,7 @@ sub addtxt {
     my $pchr="";
     while ($i!=length($pstr)) {
         $pchr=lc(substr($pstr,$i,1));
-        system "cat $vdir/$pchr >> $tmpmsg"||return undef;
+        $self->addmsg($pchr);        
         $i++;
     }
 }
@@ -1014,24 +1003,13 @@ sub addate {
     $num2=substr($num1,2,2);
     #$num2=abs($num2);
     $num2="m$num2";
-    system "cat $vdir/$num2 >> $tmpmsg";
+    $self->addmsg($num2);    
     $num2=substr($num1,4,4);
     #$num2=substr($num1,2,2) if (substr($num1,0,2) eq 19);
     $self->addval($num2);
     return;
 }
 
-sub rmdle {
-    my $self=shift; 
-    my $tmp=shift;
-    my $tmp1="";
-    my $i;
-    for ($i=0;$i<length($tmp);$i++) {
-        if (substr($tmp,$i,1)=~/[\020]/) {$tmp1=$tmp1."\020";}
-        $tmp1=$tmp1.substr($tmp,$i,1);
-    }
-    return $tmp1;
-}
 
 sub closep {
     my $self=shift;
@@ -1054,21 +1032,25 @@ Ivrs - Perl extension for Interactive Voice Response System.
 
 =head1 SYNOPSIS
 
-$iv = new Ivrs($portname,$vdir,$bindir);
+$iv = new Ivrs($portname,$vdir);
 
 =head1 DESCRIPTION
 
 This module provides the complete interface to voice modem for Interactive
 Voice Response System (IVRS). The IVRS are widely used for telebanking,
 product inforamtion, tele marketing, voice mail, fax servers, and many more.
-
 All these can be implemented using this module and with very few lines of code.
-This module takes care of all the low level function for serial port and
+This module takes care of all the low level functions of serial port and
 modem. 
+A log file defined by the $logfile="/var/log/Ivrs_Log.ttyS*" will be opened for
+logging IVRS activity. Also set $Babble =1 if you want to log all the
+messages.
+
 
 =head1 EXAMPLE
 
-The demo files are short and with full of explanation, which should serve to understanding of module.
+The demo files are short and with full of explanation, which should serve to 
+understanding of module.
 
 demo1 - A simple voice interaction.
 
@@ -1078,55 +1060,57 @@ demo3 - Fax server.
 
 =head1 METHODS
 
-$iv = new Ivrs('ttyS1',$vdir,$bindir);
+$iv = new Ivrs('ttyS1',$vdir);
 
 The first variable is the mdoem/serial port.
 
-You must specify $vdir and $bindir if you want to use other than default
-(namely sfiles/ or bin/). If you are running IVRS from /etc/inittab than
-also absolute path will be rquired.
+You must specify $vdir if you want to use other directory than 
+default directory (namely sfiles/ ). If you are running IVRS from 
+/etc/inittab then absolute path will be rquired.
 
 $iv->setport('38400','none','8','1','rts','8096');
 
 The serial port parameters are set here. These parameters are carefully
-worked after extensive trials. Change these only if you know what are you
+worked out after extensive trials. Change these only if you know what are you
 doing.
 
 $iv->initmodem;
 
 This will put the modem in voice mode. Number of AT commands are required to
-set this. Again do not change any thing here also, unless you are sure.
+set this. Again do not change any thing here, unless you are sure.
 
 $cid=$iv->waitring;
 
-This will put the modem in annswer mode and wait for the ring. When the ring
-comes call will be received and Caller ID will be returned in $cid (not
+This will put the modem in answer mode and wait for the ring. When the ring
+comes, call will be received and Caller ID will be returned in $cid (not
 tested so far). If you want to play a message through Modem speaker then
-skip it, but then you will not be able to punch DTMF codes. 
-
+skip it and put $iv->atcomm("AT#VTX","CONNECT");
+but then you will not be able to punch DTMF codes. 
 
 $iv->playfile("$msgfile","$dtmf")
 
-This requires a lot of explanation.
+This requires a bit of explanation.
+From version 0.06, the use of lin file is removed and all files are raw modem
+data (Rockwell Modem, 7200 samples per second with compression Type 4)
+type, So pvftools are no longer required to run the IVRS.
 
-$msgfile can be rmd or lin sound file generated by pvftools (See Sound
-Files later). You can specify the full path of the file with / or only file 
-name in voice file directory specified in $vdir. If no file is specified, it 
-will play special file contained in $tmpmsg. We will discuss this file in next
-section.
+You can specify the full path of the file with / or only file 
+name from voice file directory as specified in $vdir. If no file name is 
+specified, it will play special file contained in $tmpmsg. We will discuss this 
+file in next section.
 
 Another variable required is $dtmf. 
 
-If $dtmf=0 then playing will not be stopped even if caller presses any key.
+If $dtmf=0 then playing of file will not be stopped even if caller presses any key.
 
 If $dtmf=1, then the specified file will played and if caller presses any key
-then playing will immidiately stop and $iv->playfile will return the digit
-pressed.
+then playing will be immidiately stopped and $iv->playfile will return the 
+digit pressed.
 
-If $dtmf=2 or more, then playing of specified file will stopped when caller
-presses first digit and next a silence of 15 seconds will played for caller
-to enter remaining digits. When caller has pressed required number of digits
-($dtmf) then $iv->playfile will return with complete dtmf digits.
+If $dtmf=2 or more, then playing of specified file will be stopped when caller
+presses first digit and next a silence (tsil15) of 15 seconds will played for 
+caller to enter remaining digits. When caller has pressed required number of 
+digits ($dtmf) then $iv->playfile will return with complete dtmf digits.
 
 $iv->addmsg($msg)
 
@@ -1138,13 +1122,16 @@ $iv->addtxt("ABCDEF")
 
 $iv->addate("20001212")
 
-Any IVRS requires many messages to generated on fly and then played to
-caller, like number in numerical format. The linear type of sound files
-(refer pvftools ) are header less files and you can do cut paste on these
-file. The default voice directory sfiles/ has mostly linear files. The above 
-mentioned routines does exactly this. All the linear files are dumped to a
-file specified by $tmpmsg, and finally this file is converted to rmd (again
-pvftools ) and then played to caller.
+IVRS requires messages to generated on fly and then played to
+caller, like number in numerical format. The default voice directory sfiles/ 
+has rmd files with 32 bytes of header striped. These header less files
+can be cut and pasted as required. The rmd file header ( $rmdhdr ) is
+added to it before playing these file in $iv-playfile.  The above 
+mentioned routines adds up various rmd files to a file specified by $tmpmsg, 
+and finally this file along with header played to caller. I have included a
+small script wavtorock for converting wav files to rmd (only for RockWell
+chip set modem) file with striped header. I will add further support for
+other modem in future.
 
 $iv->addmsg($msg)
 
@@ -1160,7 +1147,7 @@ Same as above but with Internation format (using milions and billions)
 
 $iv->addtxt("ABCDEF")
 
-Add alphabetical characters
+Add characters (A-Z and 0-9)
 
 $iv->addate("20001212")
 
@@ -1172,18 +1159,34 @@ This will record the file $filename in rmd file format with proper header
 for a period of $duration seconds. This rmd file can be converted to any
 format using pvftools.
 
+$iv->dialout
+For dialing out a number - NOT IMPLEMETED YET.
+
+$iv->callxfer
+For tranfering a call    - NOT IMPLEMETED YET.
+
+$iv->faxmode
+This will put the modem in fax mode and you can run efix and efax to send
+the fax. This should be last instruction to IVRS. Also install efax or copy
+these files from bin/ directory to your /usr/bin.
+
 $iv->closep
 
-This will do some cleanup and hangup the line and reset the modem.
+This will do some cleanup, hangup the line and reset the modem.
 
-The demo files demo1 demo2 and demo3 are good examples for
-implementation of IVRS.
-I will add some more demo files in future release.
+The demo files demo1 demo2 and demo3 are good examples for implementation 
+of IVRS. I will add some more demo files in future release if any.
 
 =head1 THANKS
 
 I must thank Bill Birthisel, wcbirthisel@alum.mit.edu, for serial port code
 taken from SerialPort.pm,
+
+=head1 COPYRIGHT
+
+Copyright (c) 2000 Mukund Deshmukh. All rights reserved. This program is free
+software; you can redistribute it and/or modify it under the same terms
+as Perl itself.
 
 =head1 AUTHOR
 
